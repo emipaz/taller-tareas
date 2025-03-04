@@ -132,7 +132,12 @@ def ver_tareas(usuario):
                 tarea_asignada.agregar_comentario(comentario, usuario.nombre)
                 guardar_datos(tareas, TAREAS)
                 print("Acción agregado con éxito.")
-        
+        else:
+            input("Presione Enter para continuar...")
+            if usuario.rol == 'admin' and input("Desea activar la tarea? (s/n): ").lower() == 's':
+                tarea_asignada.activar_tarea()
+                guardar_datos(tareas, TAREAS)
+                print("Tarea activada con éxito.")
         if usuario.rol == 'admin':
             while True:
                 print("\nOpciones de administración de tareas:")

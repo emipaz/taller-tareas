@@ -24,6 +24,9 @@ class Tarea:
     def finalizar_tarea(self):
         """Marca la tarea como finalizada."""
         self.estado = "finalizada"
+    
+    def activar_tarea(self):
+        self.estado = "pendiente"
 
     def agregar_comentario(self, comentario, usuario):
         """Agrega un comentario a la tarea, incluyendo el usuario y la fecha."""
