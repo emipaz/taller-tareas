@@ -14,22 +14,20 @@ TAREAS_FINALIZADAS = "tareas_finalizadas.json"
 def menu_usuario(rol, usuario):
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
-        print("\n****************** Menú ******************")
-        if rol == 'admin':
-            print("1. Cambiar Contraseña")
-            print("2. Mostrar Todas las Tareas")
-            print("3. Desloguarse")
-            print("4. Salir")
-            print("Opciones del Administrador")
-            print("5. Crear Usuario")
-            print("6. Ver Usuarios")
-            print("7. Eliminar Usuario")
-            print("8. Crear Tarea")
-        else:
-            print("1. Cambiar Contraseña")
-            print("2. Ver tus Tareas")
-            print("3. Deslogearse")
-            print("4. Salir")
+        st = f"\n#{' Menú ':*^88}#" +"\n"
+        st += f"{'#':<40}{'Bienvenido: '+usuario.nombre:<49}{'#'}\n"
+        st += f"{'#':<40}"+f"{'1. Cambiar Contraseña':<49}"+"#" +"\n"
+        st += f"{'#':<40}"+f"{'2. Ver tus Tareas':<49}"+"#" +"\n"
+        st += f"{'#':<40}"+f"{'3. Desloguarse':<49}"+"#" +"\n"
+        st += f"{'#':<40}"+f"{'4. Salir':<49}"+"#" +"\n"
+        if rol == "admin":
+            st += f"{'#':<40}"+f"{'Opciones del Administrador':<49}"+"#" +"\n"
+            st += f"{'#':<40}"+f"{'5. Crear Usuario':<49}"+"#" +"\n"
+            st += f"{'#':<40}"+f"{'6. Ver Usuarios':<49}"+"#" +"\n"
+            st += f"{'#':<40}"+f"{'7. Eliminar Usuario':<49}"+"#" +"\n"
+            st += f"{'#':<40}"+f"{'8. Crear Tarea':<49}"+"#" +"\n"
+        st += f"{'#'*90}"
+        print(st)
 
         opcion = input("Seleccione una opción: ")
         if opcion == '1':
@@ -54,14 +52,14 @@ def menu_usuario(rol, usuario):
             
 def menu_usuarios(usuarios):
     os.system('cls' if os.name == 'nt' else 'clear')
-    print("\n**** Lista de Usuarios ****")
-    print(  "| Id |  Nombre  |    Rol  |")
-    print("="*27)
+    print(f"{'#':<35}"+"**** Lista de Usuarios ****")
+    print(f"{'#':<35}"+"| Id |  Nombre  |    Rol  |")
+    print(f"{'#':<35}"+"="*27)
     us = {}
     for i, user in enumerate(usuarios, start=1):
         us[str(i)]=user.nombre
-        print(f"|{i:^4}|{user.nombre:^10}|{user.rol:^9}|")
-    print("*"*27)
+        print(f"{'#':<35}"+f"|{i:^4}|{user.nombre:^10}|{user.rol:^9}|")
+    print(f"{'#':<35}"+"*"*27)
     return us
 
 def menu_tareas(tareas, usuario):
@@ -101,11 +99,8 @@ def asignar_usuario_tarea(tarea):
 def eliminar_usuario_tarea(tarea):
     usuarios_asignados = tarea.usuarios_asignados
     print("Usuarios asignados a la tarea:")
-    us = {}
-    for i, user in enumerate(usuarios_asignados, start=1):
-        print(f"{i}. {user}")
-        us[str(i)] = user
-    # print(us)
+    us = menu_usuarios([x for x in  cargar_datos(USUARIOS) 
+                        if x.nombre in usuarios_asignados])
     eliminar = input("Ingrese los nombres o ids de los usuarios a eliminar separados por comas: ").split(',')
     # print(eliminar)
     for usuario in eliminar:
@@ -138,6 +133,7 @@ def ver_tareas(usuario):
                 tarea_asignada.activar_tarea()
                 guardar_datos(tareas, TAREAS)
                 print("Tarea activada con éxito.")
+
         if usuario.rol == 'admin':
             while True:
                 print("\nOpciones de administración de tareas:")
