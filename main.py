@@ -153,7 +153,7 @@ def ver_tareas(usuario):
                     guardar_datos(tareas, TAREAS)
                 
                 elif opcion == '3':
-                    tarea[tarea_id].finalizar_tarea()
+                    tarea_asignada.finalizar_tarea()
                     guardar_datos(tareas, TAREAS)
                     print("Tarea finalizada con éxito.")
                     break
@@ -187,7 +187,7 @@ def crear_usuario():
     usuarios = cargar_datos(USUARIOS)   
     nombre = input("Ingrese el nombre del nuevo usuario: ")
     if nombre not in (user.nombre for user in usuarios):
-        password = generar_password()
+        password = generar_password(6)
         usuarios.append(Usuario(nombre, password))
         guardar_datos(usuarios , USUARIOS)
         print(f"Usuario '{nombre}' creado con contraseña: {password}")
@@ -216,18 +216,18 @@ def cambiar_password(usuario):
         if user.nombre == usuario.nombre:
             break
     actual_password =  getpass.getpass("Ingrese su contraseña actual: ")
-    if user.verificar_password(actual_password):
-        nueva_password = getpass.getpass("Ingrese su nueva contraseña: ")
+    nueva_password = getpass.getpass("Ingrese su nueva contraseña: ")
+    if user.verificar_password(actual_password) and nueva_password != actual_password:
         chek_password = getpass.getpass("Repita su nueva contraseña: ")
         if nueva_password == chek_password:
             user.cambiar_password(nueva_password)
             guardar_datos(usuarios, USUARIOS)
             print("Contraseña cambiada con éxito.")
         else:
-            print("Contraseñas o coinciden")
+            print("Contraseñas no coinciden")
             return
     else:
-        print("Contraseña incorrecta")
+        print("Contraseña incorrecta o igual a la anterior.")
     input("Presione Enter para continuar...")
 
 def crear_tarea(tareas):
