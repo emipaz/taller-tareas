@@ -5,9 +5,9 @@ separada de la interfaz de usuario para permitir reutilización.
 """
 
 from typing import List, Optional, Dict, Any, Tuple
-from usuario import Usuario
-from tarea import Tarea
-from utils import (
+from .usuario import Usuario
+from .tarea import Tarea
+from .utils import (
     cargar_datos, guardar_datos, guardar_json, hay_admin, 
     generar_password, buscar_usuario_por_nombre, buscar_tarea_por_nombre,
     filtrar_tareas_por_usuario, obtener_estadisticas_tareas
@@ -37,6 +37,8 @@ class GestorSistema:
         self.archivo_finalizadas = archivo_finalizadas
     
     # Gestión de usuarios
+
+    
     def cargar_usuarios(self) -> List[Usuario]:
         """Carga la lista de usuarios del archivo.
         
@@ -268,6 +270,7 @@ class GestorSistema:
             return False, f"Error al resetear contraseña: {e}"
     
     # Gestión de tareas
+
     def cargar_tareas(self) -> List[Tarea]:
         """Carga la lista de tareas del archivo.
         

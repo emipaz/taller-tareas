@@ -1,0 +1,10 @@
+bcrypt
+rich
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+requests
+PyJWT[crypto]
+cryptography
+passlib[bcrypt]

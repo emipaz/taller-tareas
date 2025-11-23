@@ -42,7 +42,7 @@ from rich.padding import Padding
 from rich.columns import Columns
 
 # Imports del sistema
-from gestor_sistema import GestorSistema
+from core import GestorSistema
 from usuario import Usuario
 from tarea import Tarea
 

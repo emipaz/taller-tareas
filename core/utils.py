@@ -10,8 +10,8 @@ from pickle import load, dump
 from random import choice
 from string import ascii_letters, digits
 from typing import List, Any, Dict, Optional
-from usuario import Usuario
-from tarea import Tarea
+from .usuario import Usuario
+from .tarea import Tarea
 
 
 def cargar_datos(archivo: str) -> List[Any]:
@@ -186,8 +186,8 @@ def buscar_usuario_por_nombre(usuarios: List[Usuario], nombre: str) -> Optional[
     """Busca un usuario por nombre en una lista.
     
     Args:
-        usuarios: Lista de usuarios donde buscar.
-        nombre: Nombre del usuario a buscar.
+        usuarios : Lista de usuarios donde buscar.
+        nombre   : Nombre del usuario a buscar.
         
     Returns:
         Usuario encontrado o None si no existe.
@@ -234,15 +234,17 @@ def obtener_estadisticas_tareas(tareas: List[Tarea]) -> Dict[str, int]:
         tareas: Lista de tareas para analizar.
         
     Returns:
-        Diccionario con estadísticas (total, pendientes, finalizadas).
+        Diccionario con estadísticas (total, pendientes, finalizadas, sin_asignar).
     """
     total       = len(tareas)
     finalizadas = sum(1 for tarea in tareas if tarea.esta_finalizada())
     pendientes  = total - finalizadas
+    sin_asignar = sum(1 for tarea in tareas if len(tarea.usuarios_asignados) == 0)
     
     return {
         "total"       : total,
         "pendientes"  : pendientes,
-        "finalizadas": finalizadas
+        "finalizadas" : finalizadas,
+        "sin_asignar" : sin_asignar
     }
 

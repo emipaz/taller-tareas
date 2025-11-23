@@ -13,7 +13,7 @@ Classes:
 
 import unittest
 from datetime import datetime
-from tarea import Tarea
+from core.tarea import Tarea
 
 
 class TestTarea(unittest.TestCase):

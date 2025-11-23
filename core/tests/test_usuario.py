@@ -12,7 +12,7 @@ Classes:
 """
 
 import unittest
-from usuario import Usuario
+from core.usuario import Usuario
 import bcrypt
 
 
