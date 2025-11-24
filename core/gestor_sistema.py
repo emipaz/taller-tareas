@@ -486,6 +486,34 @@ class GestorSistema:
         except Exception as e:
             return False, f"Error al agregar comentario: {e}"
     
+    def eliminar_tarea(self, nombre_tarea: str) -> Tuple[bool, str]:
+        """Elimina una tarea del sistema (solo si está finalizada).
+        
+        Args:
+            nombre_tarea: Nombre de la tarea a eliminar.
+            
+        Returns:
+            Tupla con (éxito, mensaje).
+        """
+        try:
+            tareas = self.cargar_tareas()
+            tarea = buscar_tarea_por_nombre(tareas, nombre_tarea)
+            
+            if not tarea:
+                return False, "Tarea no encontrada"
+            
+            if not tarea.esta_finalizada():
+                return False, "Solo se pueden eliminar tareas finalizadas"
+            
+            # Remover la tarea de la lista
+            tareas = [t for t in tareas if t.nombre != nombre_tarea]
+            self.guardar_tareas(tareas)
+            
+            return True, f"Tarea '{nombre_tarea}' eliminada exitosamente"
+            
+        except Exception as e:
+            return False, f"Error al eliminar tarea: {e}"
+
     def obtener_estadisticas_sistema(self) -> Dict[str, Any]:
         """Obtiene estadísticas generales del sistema.
         
