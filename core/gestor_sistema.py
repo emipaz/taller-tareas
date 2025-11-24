@@ -4,6 +4,7 @@ Este módulo contiene la lógica de negocio del sistema de gestión de tareas,
 separada de la interfaz de usuario para permitir reutilización.
 """
 
+import os
 from typing import List, Optional, Dict, Any, Tuple
 from .usuario import Usuario
 from .tarea import Tarea
@@ -22,9 +23,9 @@ class GestorSistema:
     """
     
     def __init__(self, 
-                 archivo_usuarios       : str = "usuarios.dat", 
-                 archivo_tareas         : str = "tareas.dat",
-                 archivo_finalizadas    : str = "tareas_finalizadas.json"):
+                 archivo_usuarios       : str = None, 
+                 archivo_tareas         : str = None,
+                 archivo_finalizadas    : str = None):
         """Inicializa el gestor del sistema.
         
         Args:
@@ -32,9 +33,52 @@ class GestorSistema:
             archivo_tareas: Ruta del archivo de tareas.
             archivo_finalizadas: Ruta del archivo de tareas finalizadas.
         """
-        self.archivo_usuarios    = archivo_usuarios
-        self.archivo_tareas      = archivo_tareas
-        self.archivo_finalizadas = archivo_finalizadas
+        # Obtener el directorio raíz del proyecto (directorio padre de 'core')
+        core_dir = os.path.dirname(__file__)
+        root_dir = os.path.dirname(core_dir)
+        
+        # Configurar rutas por defecto en el directorio raíz
+        self.archivo_usuarios    = archivo_usuarios or os.path.join(root_dir, "usuarios.dat")
+        self.archivo_tareas      = archivo_tareas or os.path.join(root_dir, "tareas.dat")
+        self.archivo_finalizadas = archivo_finalizadas or os.path.join(root_dir, "tareas_finalizadas.json")
+        
+        # Inicializar diccionarios de datos en memoria
+        self.usuarios = {}
+        self.tareas = {}
+    
+    def cargar_datos(self) -> None:
+        """Carga todos los datos del sistema desde archivos.
+        
+        Inicializa los diccionarios usuarios y tareas con los datos
+        cargados desde los archivos correspondientes.
+        """
+        try:
+            # Cargar usuarios y convertir a diccionario
+            usuarios_lista = self.cargar_usuarios()
+            self.usuarios = {u.nombre: u for u in usuarios_lista}
+            
+            # Cargar tareas y convertir a diccionario
+            tareas_lista = self.cargar_tareas()
+            self.tareas = {t.nombre: t for t in tareas_lista}
+            
+        except Exception as e:
+            # Si hay error, inicializar diccionarios vacíos
+            print(f"Advertencia: Error al cargar datos del sistema - {e}")
+            self.usuarios = {}
+            self.tareas = {}
+    
+    def limpiar_archivos_corruptos(self) -> None:
+        """Elimina archivos .dat que puedan estar corruptos para permitir un reinicio limpio."""
+        import os
+        archivos_a_limpiar = [self.archivo_usuarios, self.archivo_tareas]
+        
+        for archivo in archivos_a_limpiar:
+            if os.path.exists(archivo):
+                try:
+                    os.remove(archivo)
+                    print(f"Archivo {archivo} eliminado para reinicio limpio")
+                except Exception as e:
+                    print(f"No se pudo eliminar {archivo}: {e}")
     
     # Gestión de usuarios
 
@@ -48,7 +92,13 @@ class GestorSistema:
         Raises:
             IOError: Si hay error al cargar el archivo.
         """
-        return cargar_datos(self.archivo_usuarios)
+        try:
+            return cargar_datos(self.archivo_usuarios)
+        except Exception as e:
+            # Si hay error al cargar (archivo corrupto, referencias rotas, etc),
+            # devolver lista vacía
+            print(f"Advertencia: Error al cargar usuarios - {e}")
+            return []
     
     def guardar_usuarios(self, usuarios: List[Usuario]) -> bool:
         """Guarda la lista de usuarios en el archivo.
@@ -70,8 +120,14 @@ class GestorSistema:
         Returns:
             True si existe al menos un admin, False en caso contrario.
         """
-        usuarios = self.cargar_usuarios()
-        return hay_admin(usuarios)
+        try:
+            usuarios = self.cargar_usuarios()
+            return hay_admin(usuarios)
+        except Exception as e:
+            # Si hay error al cargar usuarios (por ejemplo, archivo corrupto),
+            # asumir que no hay administradores
+            print(f"Error al verificar administradores: {e}")
+            return False
     
     def crear_admin(self, nombre: str, contraseña: str) -> Tuple[bool, str]:
         """Crea un usuario administrador.
@@ -277,7 +333,13 @@ class GestorSistema:
         Returns:
             Lista de tareas cargadas.
         """
-        return cargar_datos(self.archivo_tareas)
+        try:
+            return cargar_datos(self.archivo_tareas)
+        except Exception as e:
+            # Si hay error al cargar (archivo corrupto, referencias rotas, etc),
+            # devolver lista vacía
+            print(f"Advertencia: Error al cargar tareas - {e}")
+            return []
     
     def guardar_tareas(self, tareas: List[Tarea]) -> bool:
         """Guarda la lista de tareas en el archivo.

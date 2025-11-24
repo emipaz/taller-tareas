@@ -12,7 +12,13 @@ Classes:
 """
 
 import unittest
-from core.usuario import Usuario
+import sys
+import os
+
+# Agregar el directorio raíz del proyecto al path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from core import Usuario
 import bcrypt
 
 

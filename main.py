@@ -43,8 +43,8 @@ from rich.columns import Columns
 
 # Imports del sistema
 from core import GestorSistema
-from usuario import Usuario
-from tarea import Tarea
+from core import Usuario
+from core import Tarea
 
 
 class InterfazConsola:
@@ -197,7 +197,7 @@ class InterfazConsola:
             tabla.add_row("---", "[bold yellow]ADMINISTRADOR[/bold yellow]", "[dim]---[/dim]")
             tabla.add_row("5", "👤 Crear Usuario", "[green]Admin Only[/green]")
             tabla.add_row("6", "📊 Ver Usuarios", "[green]Admin Only[/green]")
-            tabla.add_row("7", "🗑️ Eliminar Usuario", "[green]Admin Only[/green]")
+            tabla.add_row("7", "🗑️  Eliminar Usuario", "[green]Admin Only[/green]")
             tabla.add_row("8", "🔄 Resetear Contraseña", "[green]Admin Only[/green]")
             tabla.add_row("9", "➕ Crear Tarea", "[green]Admin Only[/green]")
             tabla.add_row("10", "📈 Estadísticas", "[green]Admin Only[/green]")

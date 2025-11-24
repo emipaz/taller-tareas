@@ -10,9 +10,16 @@ Author:
 Classes:
     TestTarea: Clase de pruebas para la funcionalidad de tareas.
 """
+import sys
+import os
+# Agregar el directorio raíz del proyecto al path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
 
 import unittest
 from datetime import datetime
+
+
 from core.tarea import Tarea
 
 
