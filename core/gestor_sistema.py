@@ -375,7 +375,7 @@ class GestorSistema:
             return True, f"Tarea '{nombre}' creada exitosamente"
             
         except Exception as e:
-            return False, f"Error al crear tarea: {e}"
+            return False, f"Error al crear tarea en el gestor eroor: {e}"
     
     def asignar_usuario_tarea(self, nombre_tarea: str, nombre_usuario: str) -> Tuple[bool, str]:
         """Asigna un usuario a una tarea.
