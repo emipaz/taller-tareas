@@ -20,16 +20,22 @@ Note:
     En producción, las claves deben almacenarse como variables de entorno
     o en un servicio de gestión de secretos (AWS Secrets, Azure Key Vault, etc.)
 """
-
+# Importaciones estándar
 import os
 import jwt
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, Union
+
+# Importaciones de criptografía
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+
+# Importaciones de FastAPI y dependencias relacionadas
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+# Importaciones de Pydantic para modelos de datos
 from pydantic import BaseModel
 
 

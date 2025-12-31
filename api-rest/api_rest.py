@@ -30,25 +30,36 @@ Attributes:
     gestor : Instancia del gestor de sistema (lógica de negocio)
 """
 
+import os
+import sys
+
+# Asegurar que el directorio padre esté en el path para imports relativos
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+# Importaciones estándar
 from datetime import datetime
 from typing import List, Optional
 import uvicorn
+
+# Importaciones de FastAPI y dependencias relacionadas
 from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.security import HTTPBearer
-# from fastapi.openapi.docs import get_swagger_ui_html
-# from fastapi.openapi.utils import get_openapi
 
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
-from core import GestorSistema
+# Importaciones de módulos internos 
 from jwt_auth import (
     create_token_response, get_current_user, get_current_admin, 
     verify_token, TokenData, TokenResponse
 )
+
+# Importación del gestor del sistema (lógica de negocio)
+from core import GestorSistema
+# Importación de utilidades del core
+from core.utils import buscar_usuario_por_nombre
+from core.utils import buscar_tarea_por_nombre
+
+# Importación de modelos Pydantic para validación y serialización
 from api_models import (
     # Respuestas base
     BaseResponse, ErrorResponse, HealthResponse,
@@ -66,9 +77,6 @@ from api_models import (
     EstadisticasResponse, EstadisticasUsuarios, EstadisticasTareas,
     FiltroTareasRequest, BusquedaRequest
 )
-
-from core.utils import buscar_usuario_por_nombre
-from core.utils import buscar_tarea_por_nombre
 
 
 # ================================
