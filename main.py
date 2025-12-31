@@ -23,10 +23,10 @@ Note:
     Toda la lógica de negocio está delegada al GestorSistema,
     manteniendo la separación de responsabilidades.
 """
-
-import getpass
-import sys
+# importaciones estándar
 import os
+import sys
+import getpass
 from typing import Optional, List
 
 # Rich imports para interfaz mejorada

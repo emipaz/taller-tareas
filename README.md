@@ -18,16 +18,38 @@ Sistema completo de gestión de tareas con múltiples interfaces: consola Rich, 
 │       └── test_tarea.py
 ├── 🌐 api-rest/                # API REST con FastAPI
 │   ├── __init__.py
-│   ├── api_rest.py             # Aplicación FastAPI
-│   ├── api_models.py           # Modelos Pydantic
-│   ├── jwt_auth.py             # Autenticación JWT
-│   ├── test_api_client.py      # Cliente Python para tests
+│   ├── api_rest.py              # Aplicación FastAPI
+│   ├── api_models.py            # Modelos Pydantic
+│   ├── jwt_auth.py              # Autenticación JWT
+│   ├── test_api_client.py       # Cliente Python para tests
 │   ├── test_api_endpoints.ipynb # Notebook de pruebas
-│   ├── README.md               # Documentación de la API
-│   └── tests/                  # Tests de la API
+│   ├── README.md                # Documentación de la API
+│   └── tests/                   # Tests de la API
 │       └── test_app.py
-├── 📱 main.py                  # Interfaz de consola con Rich
+├── 🚀 api-graphql/             # API GraphQL con Strawberry
+│   ├── __init__.py
+│   ├── types.py                    # Tipos GraphQL
+│   ├── schema.py                   # Schema (Query + Mutation)
+│   ├── resolvers.py                # Resolvers del sistema
+│   ├── auth.py                     # Middleware JWT
+│   ├── server.py                   # Servidor GraphQL
+│   ├── client.py                   # Cliente Python
+│   ├── test_graphql_examples.ipynb # Notebook interactivo
+│   ├── README.md                   # Documentación GraphQL
+│   └── tests/                      # Tests unitarios
+├── 🖥️ ui/                          # Interfaz gráfica Tkinter
+│   ├── __init__.py
+│   ├── main_window.py          # Ventana principal y coordinador
+│   ├── login_window.py         # Sistema de autenticación
+│   ├── admin_panel.py          # Panel de administración
+│   ├── user_panel.py           # Panel para usuarios regulares
+│   ├── dialogs.py              # Diálogos modales especializados
+│   ├── ui_utils.py             # Widgets personalizados y utilidades
+│   └── README.md               # Documentación de la UI
+├── 📱  main.py                 # Interfaz de consola con Rich
+├── 🖥️ iniciar_gui             
 ├── 🔗 api.py                   # Punto de entrada API REST
+├── 🚀 graphql_api.py           # Punto de entrada API GraphQL
 ├── 📋 requirements.txt         # Dependencias
 ├── 📄 tareas_finalizadas.json  # Datos persistidos
 └── 📖 README.md                # Este archivo
@@ -68,11 +90,87 @@ python api.py
 - ✅ CORS configurado
 - ✅ Tests automatizados
 
-### 🖥️ GUI Tkinter (Planificado)
-Interfaz gráfica de escritorio multiplataforma.
+### 🖥️ GUI Tkinter (Tkinter)
+Interfaz gráfica de escritorio multiplataforma implementada en el módulo UI del proyecto.
 
-### 🌍 Web Flask (Planificado)
+La implementación de la GUI utiliza `tkinter` y se encuentra en el paquete `ui/`. Se puede iniciar la aplicación desde el script de arranque o directamente desde el módulo principal de la GUI.
+
+Archivos y ejecución:
+
+- `iniciar_gui.py` : punto de entrada sencillo que maneja errores de importación.
+- `app_tkinter.py` : aplicación principal que crea y ejecuta la ventana.
+- Paquete `ui/` : contiene los módulos de la interfaz (ventanas, paneles y utilidades).
+
+Comandos rápidos:
+
+```bash
+python iniciar_gui.py
+# o
+python app_tkinter.py
+```
+
+Resumen de contenido del paquete `ui/`:
+
+- `main_window.py` - Ventana principal y coordinador.
+- `login_window.py` - Ventana de autenticación.
+- `admin_panel.py` - Panel de administración.
+- `user_panel.py` - Panel para usuarios regulares.
+- `dialogs.py` - Diálogos modales especializados.
+- `ui_utils.py` - Widgets personalizados y utilidades.
+
+Características principales implementadas:
+
+- Login seguro y creación de administrador inicial.
+- Panel de administrador para gestionar usuarios y tareas.
+- Panel de usuario para ver y gestionar tareas propias.
+- Widgets personalizados como tarjetas de tarea y marcos con scroll.
+
+Para más detalles y guía de uso de la interfaz ver la documentación del UI en `UI_DOCUMENTATION.md`.
+
+Estructura de archivos de la interfaz gráfica (paquete `ui/`):
+
+```text
+ui/
+├── __init__.py
+├── main_window.py
+├── login_window.py
+├── admin_panel.py
+├── user_panel.py
+├── dialogs.py
+├── ui_utils.py
+└── README.md
+```
+
+Archivos raíz relacionados (arranque y scripts):
+
+```text
+iniciar_gui.py
+app_tkinter.py
+```
+
+### 🌍 Web Flask o fastapi (Planificado)
 Interfaz web completa con templates y formularios.
+
+Pendiente de desarrollo
+
+### 🚀 API GraphQL (`graphql_api.py`)
+API GraphQL moderna con Strawberry, consultas flexibles y cliente Python integrado.
+
+```bash
+python graphql_api.py
+```
+
+**Acceso:**
+- 📡 GraphQL API: http://localhost:4000/graphql
+- 🎮 GraphQL Playground: http://localhost:4000/graphql
+- 📚 Documentación: http://localhost:4000/docs
+
+**Características:**
+- ✅ Schema tipado con Strawberry
+- ✅ Una sola query para datos complejos
+- ✅ Autenticación JWT integrada
+- ✅ Cliente Python completo
+- ✅ Notebook interactivo de ejemplos
 
 ## 🏗️ Módulo Core
 
@@ -163,9 +261,18 @@ cryptography>=41.0.0
 passlib>=1.7.4
 bcrypt>=4.0.0
 
+# API GraphQL  
+strawberry-graphql[fastapi]>=0.214.0
+gql[all]>=3.4.0
+
 # Testing
 pytest>=7.4.0
+pytest-asyncio>=0.21.0
 requests>=2.31.0
+
+# Optional: Jupyter notebooks
+jupyter>=1.0.0
+ipykernel>=6.25.0
 ```
 
 ## 🚀 Uso Rápido
@@ -191,7 +298,21 @@ curl http://localhost:8000/health
 curl http://localhost:8000/docs  # Ver documentación
 ```
 
-### 3. Cliente Python de la API
+### 3. API GraphQL
+
+```bash
+# Iniciar servidor GraphQL
+python graphql_api.py
+
+# En otra terminal, usar cliente Python
+python -c "
+from api_graphql.client import TaskGraphQLClient
+client = TaskGraphQLClient()
+print(client.health_check())
+"
+```
+
+### 4. Cliente Python de la API
 
 ```python
 from api_rest.test_api_client import TaskAPIClient
@@ -201,11 +322,14 @@ result = client.health_check()
 print(result)
 ```
 
-### 4. Tests Interactivos (Jupyter)
+### 5. Tests Interactivos (Jupyter)
 
 ```bash
-# Abrir notebook
+# Notebook API REST
 jupyter notebook api-rest/test_api_endpoints.ipynb
+
+# Notebook API GraphQL  
+jupyter notebook api-graphql/test_graphql_examples.ipynb
 ```
 
 ## 🧪 Testing
@@ -215,14 +339,26 @@ jupyter notebook api-rest/test_api_endpoints.ipynb
 python -m pytest core/tests/ -v
 ```
 
-### Tests de la API
+### Tests de la API REST
 ```bash
 python -m pytest api-rest/tests/ -v
 ```
 
+### Tests de la API GraphQL
+```bash
+python -m pytest api-graphql/tests/ -v
+# O ejecutar el runner personalizado
+python api-graphql/tests/run_all_tests.py
+```
+
 ### Cliente de Pruebas Interactivo
 ```bash
+# Cliente API REST
 python api-rest/test_api_client.py
+
+# Notebooks interactivos
+jupyter notebook api-rest/test_api_endpoints.ipynb
+jupyter notebook api-graphql/test_graphql_examples.ipynb
 ```
 
 ## 📁 Estructura de Datos
@@ -231,8 +367,6 @@ python api-rest/test_api_client.py
 - `usuarios.pkl` - Usuarios del sistema (pickle)
 - `tareas.pkl` - Tareas (pickle)  
 - `tareas_finalizadas.json` - Backup en JSON
-- `jwt_private_key.pem` - Clave privada JWT
-- `jwt_public_key.pem` - Clave pública JWT
 
 ### Formato de Datos
 
@@ -260,17 +394,17 @@ python api-rest/test_api_client.py
 - ✅ Documentación completa
 
 ### 🟡 En Desarrollo
-- 🟡 GUI con Tkinter
-- 🟡 Interfaz web con Flask
-- 🟡 Mejoras de seguridad
-- 🟡 Métricas avanzadas
+- [x] 🟡 GUI con Tkinter
+- [ ] 🟡 Interfaz web con Flask
+- [ ] 🟡 Mejoras de seguridad
+- [ ] 🟡 Métricas avanzadas
 
 ### 🔮 Futuro
-- 🔮 Base de datos PostgreSQL
-- 🔮 Notificaciones en tiempo real
-- 🔮 API GraphQL
-- 🔮 Aplicación móvil
-- 🔮 Dashboard analítico
+- [ ] 🔮 Base de datos PostgreSQL
+- [ ] 🔮 Notificaciones en tiempo real
+- [x] ✅ API GraphQL
+- [ ] 🔮 Aplicación móvil
+- [ ] 🔮 Dashboard analítico
 
 ## 🤝 Contribución
 
