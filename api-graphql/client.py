@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class Usuario:
+class UsuarioCliente:
     """Representación local de un usuario del sistema.
     
     Esta clase dataclass encapsula los datos de un usuario
@@ -29,7 +29,7 @@ class Usuario:
         activo (bool)         : Si el usuario está activo en el sistema
         
     Example:
-        usuario = Usuario(
+        usuario = UsuarioCliente(
             id="123",
             nombre="Juan Pérez",
             email="juan@example.com",
@@ -38,16 +38,14 @@ class Usuario:
             activo=True
         )
     """
-    id              : str
+    # id              : str
     nombre          : str
-    email           : Optional[str]
     rol             : str
-    fecha_registro  : str
     activo          : bool
 
 
 @dataclass
-class Tarea:
+class TareaCliente:
     """Representación local de una tarea del sistema.
     
     Esta clase dataclass encapsula los datos de una tarea
@@ -55,17 +53,17 @@ class Tarea:
     y cálculos derivados como duración.
     
     Attributes:
-        id (str)                           : Identificador único de la tarea
-        nombre (str)                       : Título o nombre de la tarea
-        descripcion (str)                  : Descripción detallada de la tarea
-        estado (str)                       : Estado actual ("PENDIENTE", "EN_PROGRESO", "FINALIZADA")
-        fecha_creacion (str)               : Fecha de creación en formato ISO
-        fecha_finalizacion (Optional[str]) : Fecha de finalización (si aplica)
-        usuarios_asignados (List[Usuario]) : Lista de usuarios asignados
-        duracion_dias (Optional[int])      : Duración calculada en días
+        id (str)                                  : Identificador único de la tarea
+        nombre (str)                              : Título o nombre de la tarea
+        descripcion (str)                         : Descripción detallada de la tarea
+        estado (str)                              : Estado actual ("PENDIENTE", "EN_PROGRESO", "FINALIZADA")
+        fecha_creacion (str)                      : Fecha de creación en formato ISO
+        fecha_finalizacion (Optional[str])        : Fecha de finalización (si aplica)
+        usuarios_asignados (List[UsuarioCliente]) : Lista de usuarios asignados
+        duracion_dias (Optional[int])             : Duración calculada en días
         
     Example:
-        tarea = Tarea(
+        tarea = TareaCliente(
             id="456",
             nombre="Implementar nueva funcionalidad",
             descripcion="Desarrollar el módulo de reportes",
@@ -74,13 +72,13 @@ class Tarea:
             usuarios_asignados=[usuario1, usuario2]
         )
     """
-    id                   : str
+    # id                   : str
     nombre               : str
     descripcion          : str
     estado               : str
     fecha_creacion       : str
     fecha_finalizacion   : Optional[str] = None
-    usuarios_asignados   : List[Usuario] = None
+    usuarios_asignados   : List[UsuarioCliente] = None
     duracion_dias        : Optional[int] = None
     
     def __post_init__(self):
@@ -294,15 +292,12 @@ class TaskGraphQLClient:
         mutation = """
             mutation Login($username: String!, $password: String!) {
                 login(input: {username: $username, password: $password}) {
-                    access_token
-                    refresh_token
-                    expires_in
+                    accessToken
+                    refreshToken
+                    expiresIn
                     usuario {
-                        id
                         nombre
-                        email
                         rol
-                        fecha_registro
                         activo
                     }
                 }
@@ -313,9 +308,16 @@ class TaskGraphQLClient:
         result    = self._execute_query(mutation, variables)
         
         auth_data          = result['login']
-        self.access_token  = auth_data['access_token']
-        self.refresh_token = auth_data['refresh_token']
-        self.current_user = Usuario(**auth_data['usuario'])
+        self.access_token  = auth_data['accessToken']
+        self.refresh_token = auth_data['refreshToken']
+        
+        # Convertir datos del usuario para el dataclass
+        user_data = auth_data['usuario']
+        self.current_user = UsuarioCliente(
+            nombre         = user_data['nombre'],
+            rol            = user_data['rol'],
+            activo         = user_data.get('activo', True)
+        )
         
         # Configurar header de autorización
         self._set_auth_token(self.access_token)
@@ -348,7 +350,7 @@ class TaskGraphQLClient:
                     activo         : Optional[bool] = None,
                     texto_busqueda : Optional[str]  = None,
                     limite         : int            = 50,
-                    offset         : int            = 0) -> List[Usuario]:
+                    offset         : int            = 0) -> List[UsuarioCliente]:
         """
         Obtener lista de usuarios con filtros.
         
@@ -365,15 +367,12 @@ class TaskGraphQLClient:
         query = """
             query GetUsuarios($filtro: FiltroUsuarios) {
                 usuarios(filtro: $filtro) {
-                    id
                     nombre
-                    email
                     rol
-                    fecha_registro
                     activo
                     estadisticas {
-                        tareas_asignadas
-                        tareas_completadas
+                        tareasAsignadas
+                        tareasCompletadas
                         productividad
                     }
                 }
@@ -393,72 +392,79 @@ class TaskGraphQLClient:
         variables = {'filtro': filtro} if filtro else None
         result    = self._execute_query(query, variables)
         
-        return [Usuario(**user) for user in result['usuarios']]
+        usuarios_lista = []
+        for user_data in result['usuarios']:
+            usuario = UsuarioCliente(
+                nombre         = user_data['nombre'],
+                rol            = user_data['rol'],
+                activo         = user_data.get('activo', True)
+            )
+            usuarios_lista.append(usuario)
+        return usuarios_lista
     
-    def get_usuario(self, user_id: str) -> Optional[Usuario]:
+    def get_usuario(self, user_id: str) -> Optional[UsuarioCliente]:
         """
         Obtener usuario específico.
         
         Args:
-            user_id: ID del usuario
+            user_id: Nombre del usuario (usado como ID)
             
         Returns:
             Usuario o None si no existe
         """
         query = """
-            query GetUsuario($id: String!) {
-                usuario(id: $id) {
-                    id
+            query GetUsuario($nombre: String!) {
+                usuario(nombre: $nombre) {
                     nombre
-                    email
                     rol
-                    fecha_registro
                     activo
-                    tareas_asignadas {
-                        id
+                    tareasAsignadas {
                         nombre
                         estado
                     }
                     estadisticas {
-                        tareas_asignadas
-                        tareas_completadas
+                        tareasAsignadas
+                        tareasCompletadas
                         productividad
                     }
                 }
             }
         """
         
-        result    = self._execute_query(query, {'id': user_id})
+        result    = self._execute_query(query, {'nombre': user_id})
         user_data = result.get('usuario')
         
-        return Usuario(**user_data) if user_data else None
+        if not user_data:
+            return None
+            
+        return UsuarioCliente(
+            nombre=user_data['nombre'],
+            rol=user_data['rol'],
+            activo=user_data.get('activo', True)
+        )
     
-    def crear_usuario(self, 
-                     nombre   : str, 
-                     password : str,
-                     rol      : str           = "USUARIO",
-                     email    : Optional[str] = None) -> Dict:
+    def crear_usuario(self, nombre: str) -> Dict:
         """
         Crear nuevo usuario (requiere permisos admin).
         
+        El sistema core solo requiere el nombre del usuario.
+        - Rol siempre es 'user' por defecto
+        - No se requiere contraseña inicial
+        - No se maneja email
+        
         Args:
             nombre: Nombre del usuario
-            password: Contraseña
-            rol: Rol del usuario (ADMIN/USUARIO)
-            email: Email opcional
             
         Returns:
             dict: Respuesta de la creación
         """
         mutation = """
             mutation CrearUsuario($input: CrearUsuarioInput!) {
-                crear_usuario(input: $input) {
+                crearUsuario(input: $input) {
                     success
                     message
                     usuario {
-                        id
                         nombre
-                        email
                         rol
                         activo
                     }
@@ -467,15 +473,11 @@ class TaskGraphQLClient:
         """
         
         input_data = {
-            'nombre'  : nombre,
-            'password': password,
-            'rol'     : rol
+            'nombre': nombre
         }
-        if email:
-            input_data['email'] = email
         
         result = self._execute_query(mutation, {'input': input_data})
-        return result['crear_usuario']
+        return result['crearUsuario']
     
     # =====================
     # TAREAS
@@ -488,7 +490,7 @@ class TaskGraphQLClient:
                   fecha_desde    : Optional[str] = None,
                   fecha_hasta    : Optional[str] = None,
                   limite         : int            = 50,
-                  offset         : int            = 0) -> List[Tarea]:
+                  offset         : int            = 0) -> List[TareaCliente]:
         """
         Obtener lista de tareas con filtros.
         
@@ -507,15 +509,13 @@ class TaskGraphQLClient:
         query = """
             query GetTareas($filtro: FiltroTareas) {
                 tareas(filtro: $filtro) {
-                    id
                     nombre
                     descripcion
                     estado
-                    fecha_creacion
-                    fecha_finalizacion
-                    duracion_dias
-                    usuarios_asignados {
-                        id
+                    fechaCreacion
+                    fechaFinalizacion
+                    duracionDias
+                    usuariosAsignados {
                         nombre
                         rol
                     }
@@ -542,22 +542,30 @@ class TaskGraphQLClient:
         
         tareas = []
         for tarea_data in result['tareas']:
-            usuarios = [Usuario(**u) for u in tarea_data.get('usuarios_asignados', [])]
-            tarea = Tarea(
-                id                 = tarea_data['id'],
+            usuarios = []
+            for u in tarea_data.get('usuariosAsignados', []):
+                usuario = UsuarioCliente(
+                    nombre         = u['nombre'],
+                    rol            = u['rol'],
+                    activo         = True
+                )
+                usuarios.append(usuario)
+                
+            tarea = TareaCliente(
+                id                 = tarea_data['nombre'],
                 nombre             = tarea_data['nombre'],
                 descripcion        = tarea_data['descripcion'],
                 estado             = tarea_data['estado'],
-                fecha_creacion     = tarea_data['fecha_creacion'],
-                fecha_finalizacion = tarea_data.get('fecha_finalizacion'),
-                duracion_dias      = tarea_data.get('duracion_dias'),
+                fecha_creacion     = tarea_data['fechaCreacion'],
+                fecha_finalizacion = tarea_data.get('fechaFinalizacion'),
+                duracion_dias      = tarea_data.get('duracionDias'),
                 usuarios_asignados = usuarios
             )
             tareas.append(tarea)
         
         return tareas
     
-    def get_tarea(self, tarea_id: str) -> Optional[Tarea]:
+    def get_tarea(self, tarea_id: str) -> Optional[TareaCliente]:
         """
         Obtener tarea específica.
         
@@ -568,23 +576,16 @@ class TaskGraphQLClient:
             Tarea o None si no existe
         """
         query = """
-            query GetTarea($id: String!) {
-                tarea(id: $id) {
-                    id
+            query GetTarea($nombre: String!) {
+                tarea(nombre: $nombre) {
                     nombre
                     descripcion
                     estado
-                    fecha_creacion
-                    fecha_finalizacion
-                    duracion_dias
-                    usuarios_asignados {
-                        id
-                        nombre
-                        email
-                        rol
-                    }
+                    fechaCreacion
+                    fechaFinalizacion
+                    duracionDias
+                    usuariosAsignados
                     comentarios {
-                        id
                         texto
                         autor
                         fecha
@@ -593,21 +594,29 @@ class TaskGraphQLClient:
             }
         """
         
-        result = self._execute_query(query, {'id': tarea_id})
+        result = self._execute_query(query, {'nombre': tarea_id})
         tarea_data = result.get('tarea')
         
         if not tarea_data:
             return None
         
-        usuarios = [Usuario(**u) for u in tarea_data.get('usuarios_asignados', [])]
-        return Tarea(
-            id                 = tarea_data['id'],
+        usuarios = []
+        for u in tarea_data.get('usuariosAsignados', []):
+            usuario = UsuarioCliente(
+                nombre         = u['nombre'],
+                rol            = u['rol'],
+                activo         = True
+            )
+            usuarios.append(usuario)
+            
+        return TareaCliente(
+            id                 = tarea_data['nombre'],
             nombre             = tarea_data['nombre'],
             descripcion        = tarea_data['descripcion'],
             estado             = tarea_data['estado'],
-            fecha_creacion     = tarea_data['fecha_creacion'],
-            fecha_finalizacion = tarea_data.get('fecha_finalizacion'),
-            duracion_dias      = tarea_data.get('duracion_dias'),
+            fecha_creacion     = tarea_data['fechaCreacion'],
+            fecha_finalizacion = tarea_data.get('fechaFinalizacion'),
+            duracion_dias      = tarea_data.get('duracionDias'),
             usuarios_asignados = usuarios
         )
     
@@ -628,31 +637,28 @@ class TaskGraphQLClient:
         """
         mutation = """
             mutation CrearTarea($input: CrearTareaInput!) {
-                crear_tarea(input: $input) {
+                crearTarea(input: $input) {
                     success
                     message
                     tarea {
-                        id
                         nombre
                         descripcion
                         estado
-                        fecha_creacion
-                        usuarios_asignados {
-                            nombre
-                        }
+                        fechaCreacion
+                        usuariosAsignados
                     }
                 }
             }
         """
         
         input_data = {
-            'nombre'       : nombre,
-            'descripcion'  : descripcion,
-            'usuarios_ids' : usuarios_ids or []
+            'nombre'            : nombre,
+            'descripcion'       : descripcion,
+            'usuariosAsignados' : usuarios_ids or []
         }
         
         result = self._execute_query(mutation, {'input': input_data})
-        return result['crear_tarea']
+        return result['crearTarea']
     
     def actualizar_estado_tarea(self, tarea_id: str, estado: str) -> Dict:
         """
@@ -666,24 +672,25 @@ class TaskGraphQLClient:
             dict: Respuesta de la actualización
         """
         mutation = """
-            mutation ActualizarEstadoTarea($tareaId: String!, $estado: EstadoTarea!) {
-                actualizar_estado_tarea(tarea_id: $tareaId, estado: $estado) {
+            mutation ActualizarEstadoTarea($tareaNombre: String!, $estado: EstadoTarea!) {
+                actualizar_estado_tarea(tarea_nombre: $tareaNombre, estado: $estado) {
                     success
                     message
                     tarea {
-                        id
                         nombre
+                        drscripcion
                         estado
-                        fecha_finalizacion
-                        duracion_dias
+                        fechaCreacion
+                        usuariosAsignados
+
                     }
                 }
             }
         """
         
         variables = {
-            'tareaId': tarea_id,
-            'estado' : estado.upper()
+            'tareaNombre': tarea_id,
+            'estado'     : estado.upper()
         }
         
         result = self._execute_query(mutation, variables)
@@ -706,19 +713,16 @@ class TaskGraphQLClient:
                     success
                     message
                     tarea {
-                        id
                         nombre
-                        usuarios_asignados {
-                            nombre
-                        }
+                        usuariosAsignados
                     }
                 }
             }
         """
         
         input_data = {
-            'tarea_id'   : tarea_id,
-            'usuario_id' : usuario_id
+            'tarea_nombre'   : tarea_id,
+            'usuario_nombre' : usuario_id
         }
         
         result = self._execute_query(mutation, {'input': input_data})
@@ -765,30 +769,23 @@ class TaskGraphQLClient:
                         productividad_general
                     }
                     tareas_recientes {
-                        id
                         nombre
                         estado
-                        fecha_creacion
-                        usuarios_asignados {
-                            nombre
-                        }
+                        fechaCreacion
+                        usuariosAsignados
                     }
                     usuarios_activos {
-                        id
                         nombre
                         rol
                         estadisticas {
-                            tareas_asignadas
+                            tareasAsignadas
                             productividad
                         }
                     }
                     tareas_urgentes {
-                        id
                         nombre
-                        fecha_creacion
-                        usuarios_asignados {
-                            nombre
-                        }
+                        fechaCreacion
+                        usuariosAsignados
                     }
                 }
             }

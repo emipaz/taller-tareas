@@ -107,38 +107,37 @@ class Usuario:
     """Representa un usuario del sistema de gestión de tareas.
     
     Este tipo GraphQL mapea directamente con la clase core.usuario.Usuario
-    y expone sus propiedades principales más campos calculados.
+    y refleja exactamente los campos que maneja el sistema core.
     
     Attributes:
-        nombre (str)                  : Nombre único del usuario (pk).
-        rol (RolUsuario)              : Rol del usuario (ADMIN o USER).
-        tiene_password (bool)         : Indica si el usuario tiene contraseña configurada.
-        email (Optional[str])         : Dirección de correo electrónico (campo adicional para GraphQL).
-        fecha_registro (Optional[str]): Fecha de registro (campo adicional para GraphQL).
-        activo (bool)                 : Indica si el usuario está activo (campo adicional).
+        id (str)              : Identificador único (mismo que nombre).
+        nombre (str)          : Nombre único del usuario.
+        rol (RolUsuario)      : Rol del usuario (ADMIN o USER).
+        tiene_password (bool) : Indica si el usuario tiene contraseña configurada.
+        activo (bool)         : Siempre True (campo para compatibilidad GraphQL).
         
     Methods:
-        tareas_asignadas  : Retorna las tareas asignadas a este usuario.
-        estadisticas      : Retorna estadísticas del usuario.
+        tareas_asignadas : Retorna las tareas asignadas a este usuario.
+        estadisticas     : Retorna estadísticas del usuario.
         
     Note:
-        Los campos core son: nombre, rol, tiene_password
-        Los campos adicionales (email, fecha_registro, activo) son para enriquecer la API GraphQL
+        - No incluye email (no existe en el core)
+        - No incluye fecha_registro (no existe en el core)
+        - activo siempre es True (el core no maneja usuarios inactivos)
         
     Example:
         usuario = Usuario(
+            id="juan_perez",
             nombre="juan_perez",
             rol=RolUsuario.USER,
-            tiene_password=True,
-            email="juan@ejemplo.com",
+            tiene_password=False,
             activo=True
         )
     """
+    id              : str                 # Identificador único (mismo que nombre)
     nombre          : str
     rol             : RolUsuario
-    tiene_password  : bool                = True
-    email           : Optional[str]       = None
-    fecha_registro  : Optional[str]       = None
+    tiene_password  : bool                = False
     activo          : bool                = True
     
     # Campos que se resuelven dinámicamente
@@ -207,10 +206,26 @@ class Tarea:
             fecha_creacion="2024-01-01 10:00:00"
         )
     """
+    id              : str             # Identificador único
     nombre          : str
     descripcion     : str
     estado          : EstadoTarea
     fecha_creacion  : str
+    
+    # Campos que se resuelven dinámicamente
+    @strawberry.field
+    def fecha_finalizacion(self) -> Optional[str]:
+        """Fecha de finalización de la tarea (si está finalizada).
+        
+        Returns:
+            Optional[str]: Fecha de finalización si la tarea está finalizada, None en caso contrario.
+            
+        Note:
+            Este campo se calcula dinámicamente. Si la tarea está finalizada, 
+            se podría calcular o almacenar la fecha de finalización.
+        """
+        # Se resolverá en el resolver
+        return None
     
     # Campos que se resuelven dinámicamente
     @strawberry.field
@@ -348,34 +363,32 @@ class DashboardData:
 
 # Input Types para Mutations
 @strawberry.input
+@strawberry.input
 class CrearUsuarioInput:
     """Input para crear un nuevo usuario en el sistema.
     
+    El sistema core es simple: solo requiere el nombre del usuario.
+    Todos los usuarios se crean con rol 'user' por defecto y deben
+    configurar su contraseña en el primer login.
+    
     Attributes:
-        nombre (str)           : Nombre único del usuario (requerido).
-        password (str)         : Contraseña del usuario (requerido).
-        rol (RolUsuario)       : Rol asignado, por defecto USER.
-        email (Optional[str])  : Dirección de correo electrónico (campo adicional).
+        nombre (str): Nombre único del usuario (requerido).
         
     Note:
-        Los campos core son: nombre, password, rol
-        email es un campo adicional para enriquecer la API
+        - Rol siempre es 'user' por defecto
+        - No se requiere contraseña inicial
+        - No se maneja email en el core
+        - Solo el admin puede crear nuevos usuarios
         
     Example:
         input_usuario = CrearUsuarioInput(
-            nombre="juan_perez",
-            password="password_seguro",
-            rol=RolUsuario.USER,
-            email="juan@empresa.com"
+            nombre="juan_perez"
         )
         
     Note:
-        Solo usuarios con rol ADMIN pueden crear nuevos usuarios.
+        El usuario deberá configurar su contraseña al loguearse por primera vez.
     """
-    nombre    : str
-    password  : str
-    rol       : RolUsuario    = RolUsuario.USER
-    email     : Optional[str] = None
+    nombre: str
 
 
 @strawberry.input
@@ -461,13 +474,13 @@ class FiltroTareas:
     Attributes:
         estado         : Filtrar por estado de la tarea.
         usuario_nombre : Filtrar tareas asignadas a usuario específico.
-        texto_busqueda : Búsqueda en nombre y descripción.
+        textoBusqueda  : Búsqueda en nombre y descripción.
         limite         : Número máximo de resultados.
         offset         : Saltar resultados para paginación.
     """
     estado          : Optional[EstadoTarea] = None
     usuario_nombre  : Optional[str]         = None
-    texto_busqueda  : Optional[str]         = None
+    textoBusqueda   : Optional[str]         = None
     limite          : int                   = 50
     offset          : int                   = 0
 
@@ -475,11 +488,11 @@ class FiltroTareas:
 @strawberry.input
 class FiltroUsuarios:
     """Filtros para búsqueda de usuarios"""
-    rol            : Optional[RolUsuario]  = None
-    activo         : Optional[bool]        = None
-    texto_busqueda : Optional[str]         = None
-    limite         : int                   = 50
-    offset         : int                   = 0
+    rol           : Optional[RolUsuario]  = None
+    activo        : Optional[bool]        = None
+    textoBusqueda : Optional[str]         = None
+    limite        : int                   = 50
+    offset        : int                   = 0
 
 # Response Types
 @strawberry.type

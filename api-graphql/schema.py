@@ -81,7 +81,6 @@ class Query:
         # Query básica
         query {
             usuarios {
-                id
                 nombre
                 rol
             }
@@ -446,14 +445,13 @@ class Mutation:
     ) -> UsuarioMutationResponse:
         """Crea un nuevo usuario en el sistema (solo administradores).
         
+        El sistema core es simple: solo requiere el nombre del usuario.
+        Todos los usuarios se crean con rol 'user' por defecto.
+        
         Args:
             input (CrearUsuarioInput): Datos del nuevo usuario conteniendo:
                 
-                - nombre    : Nombre completo del usuario
-                - email     : Email único del usuario
-                - username  : Nombre de usuario único
-                - password  : Contraseña (será hasheada)
-                - rol       : Rol del usuario (ADMIN/USUARIO)
+                - nombre : Nombre único del usuario (requerido)
             
             info (Info) : Contexto de GraphQL con usuario actual.
                 
@@ -463,11 +461,31 @@ class Mutation:
                 - success : Si la creación fue exitosa
                 - message : Mensaje descriptivo
                 - usuario : Datos del usuario creado (si exitoso)
-                - errors  : Lista de errores de validación (si falla)
+                - code    : Código de error (si falla)
+                
+        Note:
+            - Solo administradores pueden crear usuarios
+            - Rol siempre es 'user' por defecto
+            - No se requiere contraseña inicial
+            - No se maneja email en el sistema core
+            - El usuario debe configurar su contraseña en el primer login
                 
         Raises:
             PermissionDenied : Si el usuario no es administrador.
-            ValidationError  : Si los datos no cumplen los requisitos.
+            
+        Example:
+            crear_usuario(input: {
+                nombre: "nuevo_usuario"
+            }) {
+                success
+                message
+                usuario {
+                    id
+                    nombre
+                    rol
+                    tiene_password
+                }
+            }
             
         Example:
             mutation {

@@ -146,9 +146,10 @@ def get_current_user(request: Optional[Request]) -> Optional[dict]:
         # Crear un objeto usuario básico (esto se puede mejorar)
         # Por ahora retornamos un dict simple con la información del token
         return {
-            "username": username,
-            "role": getattr(token_data, 'role', 'user'),
-            "token_type": getattr(token_data, 'token_type', 'access')
+            "username"   : username,
+            "role"       : getattr(token_data, 'role', 'user'),
+            "rol"        : getattr(token_data, 'role', 'user'),  # Agregar clave en español
+            "token_type" : getattr(token_data, 'token_type', 'access')
         }
         
     except jwt.InvalidTokenError:
@@ -372,7 +373,7 @@ class AuthMiddleware:
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http" and scope["path"] == "/graphql":
             # Crear contexto de autenticación para GraphQL
-            request = Request(scope, receive)
+            request               = Request(scope, receive)
             scope["auth_context"] = get_auth_context(request)
         
         await self.app(scope, receive, send)
