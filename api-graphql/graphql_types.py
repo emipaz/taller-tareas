@@ -97,6 +97,7 @@ class Comentario:
             fecha="2024-01-01 10:00:00"
         )
     """
+    id    : Optional[int] = None
     texto : str
     autor : str
     fecha : str
@@ -362,7 +363,6 @@ class DashboardData:
 
 
 # Input Types para Mutations
-@strawberry.input
 @strawberry.input
 class CrearUsuarioInput:
     """Input para crear un nuevo usuario en el sistema.

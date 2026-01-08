@@ -91,7 +91,7 @@ class Query:
             tareas(filtro: {estado: PENDIENTE, limite: 10}) {
                 id
                 nombre
-                usuarios_asignados { nombre }
+                usuariosAsignados { nombre }
             }
         }
     """
@@ -129,7 +129,7 @@ class Query:
                     email
                     tiene_password
                     estadisticas {
-                        tareas_asignadas
+                        tareasAsignadas
                         productividad
                     }
                 }
@@ -163,7 +163,7 @@ class Query:
                     email
                     tiene_password
                     estadisticas {
-                        tareas_asignadas
+                        tareasAsignadas
                         productividad
                     }
                     tareas_asignadas {
@@ -209,14 +209,14 @@ class Query:
                     nombre
                     descripcion
                     estado
-                    fecha_creacion
-                    usuarios_asignados
+                    fechaCreacion
+                    usuariosAsignados
                     comentarios {
                         texto
                         autor
                         fecha
                     }
-                    esta_finalizada
+                    estaFinalizada
                 }
                 }
             }
@@ -257,7 +257,7 @@ class Query:
                         autor
                         fecha
                     }
-                    esta_finalizada
+                    estaFinalizada
                 }
             }
             
@@ -291,19 +291,19 @@ class Query:
         Example:
             query {
                 estadisticas_generales {
-                    total_usuarios
-                    total_tareas
-                    tareas_por_estado {
+                    totalUsuarios
+                    totalTareas
+                    tareasPorEstado {
                         pendientes
-                        en_progreso
+                        enProgreso
                         finalizadas
                     }
-                    productividad_general
-                    usuarios_activos
-                    tendencias_semanales {
+                    productividadGeneral
+                    usuariosActivos
+                    tendenciasSemanales {
                         fecha
-                        tareas_creadas
-                        tareas_completadas
+                        tareasCreadas
+                        tareasCompletadas
                     }
                 }
             }
@@ -344,17 +344,17 @@ class Query:
             query {
                 dashboard {
                     estadisticas {
-                        total_usuarios
-                        total_tareas
-                        productividad_general
+                        totalUsuarios
+                        totalTareas
+                        productividadGeneral
                     }
-                    tareas_recientes {
+                    tareasRecientes {
                         id
                         nombre
                         estado
-                        usuarios_asignados { nombre }
+                        usuariosAsignados { nombre }
                     }
-                    usuarios_activos {
+                    usuariosActivos {
                         nombre
                         estadisticas { productividad }
                     }
@@ -737,13 +737,13 @@ EXAMPLE_QUERIES = {
     "login": """
         mutation Login($username: String!, $password: String!) {
             login(input: {username: $username, password: $password}) {
-                access_token
-                refresh_token
-                expires_in
+                accessToken
+                refreshToken
+                expiresIn
                 usuario {
                     nombre
                     rol
-                    tiene_password
+                    tienePassword
                 }
             }
         }
@@ -753,23 +753,23 @@ EXAMPLE_QUERIES = {
         query Dashboard {
             dashboard {
                 estadisticas {
-                    total_usuarios
-                    total_tareas
-                    tareas_pendientes
-                    tareas_completadas
-                    productividad_general
+                    totalUsuarios
+                    totalTareas
+                    tareasPendientes
+                    tareasCompletadas
+                    productividadGeneral
                 }
                 tareas_recientes {
                     nombre
                     descripcion
                     estado
                     fecha_creacion
-                    usuarios_asignados
+                    usuariosAsignados
                 }
-                usuarios_activos {
+                usuariosActivos {
                     nombre
                     rol
-                    tiene_password
+                    tienePassword
                     activo
                 }
             }
@@ -781,18 +781,18 @@ EXAMPLE_QUERIES = {
             usuarios {
                 nombre
                 rol
-                tiene_password
+                tienePassword
                 email
-                tareas_asignadas {
+                tareasAsignadas {
                     nombre
                     descripcion
                     estado
-                    fecha_creacion
+                    fechaCreacion
                 }
                 estadisticas {
-                    tareas_asignadas
-                    tareas_completadas
-                    tareas_pendientes
+                    tareasAsignadas
+                    tareasCompletadas
+                    tareasPendientes
                     productividad
                 }
             }
@@ -805,14 +805,14 @@ EXAMPLE_QUERIES = {
                 nombre
                 descripcion
                 estado
-                fecha_creacion
-                usuarios_asignados
+                fechaCreacion
+                usuariosAsignados
                 comentarios {
                     texto
                     autor
                     fecha
                 }
-                esta_finalizada
+                estaFinalizada
             }
         }
     """,
@@ -826,8 +826,8 @@ EXAMPLE_QUERIES = {
                     nombre
                     descripcion
                     estado
-                    fecha_creacion
-                    usuarios_asignados
+                    fechaCreacion
+                    usuariosAsignados
                     comentarios {
                         texto
                         autor
@@ -847,9 +847,9 @@ EXAMPLE_QUERIES = {
                     nombre
                     descripcion
                     estado
-                    fecha_creacion
-                    usuarios_asignados
-                    esta_finalizada
+                    fechaCreacion
+                    usuariosAsignados
+                    estaFinalizada
                 }
             }
         }

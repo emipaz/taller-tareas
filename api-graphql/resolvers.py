@@ -136,24 +136,33 @@ class GraphQLResolvers:
             # Recargar datos antes de consultar
             self.gestor.cargar_datos()
             # Verificar autenticación
+            
             current_user = get_current_user(info.context.get("request"))
             usuarios_core = list(self.gestor.usuarios.values())
+
             # Aplicar filtros si existen
             if filtro:
                 if filtro.rol:
                     usuarios_core = [u for u in usuarios_core if u.rol == filtro.rol.value]
+
                 if filtro.activo is not None:
                     if not filtro.activo:
                         usuarios_core = []
+                
                 if filtro.textoBusqueda:
                     texto = filtro.textoBusqueda.lower()
                     usuarios_core = [u for u in usuarios_core if texto in u.nombre.lower()]
+            
             start = filtro.offset if filtro else 0
             end = start + (filtro.limite if filtro else 50)
+        
             usuarios_core = usuarios_core[start:end]
+        
             return [self._core_usuario_to_graphql(u) for u in usuarios_core]
+        
         except AuthenticationError:
             raise Exception("No autorizado")
+        
         except Exception as e:
             raise Exception(f"Error obteniendo usuarios: {str(e)}")
     
@@ -188,8 +197,10 @@ class GraphQLResolvers:
             if not usuario_core:
                 return None
             return self._core_usuario_to_graphql(usuario_core)
+        
         except AuthenticationError:
             raise Exception("No autorizado")
+        
         except Exception as e:
             raise Exception(f"Error obteniendo usuario: {str(e)}")
     
@@ -252,34 +263,27 @@ class GraphQLResolvers:
     
     def get_tarea(self, nombre: str, info: Info = None) -> Optional[Tarea]:
         """Resolver para obtener una tarea específica por nombre.
-        try:
-            self.gestor.cargar_datos()
-            current_user = get_current_user(info.context.get("request"))
-            tarea_core = self.gestor.tareas.get(nombre)
-            if not tarea_core:
-                return None
-            return self._core_tarea_to_graphql(tarea_core)
-        except AuthenticationError:
-            raise Exception("No autorizado")
-        except Exception as e:
-            raise Exception(f"Error obteniendo tarea: {str(e)}")
+
+        Args:
+            nombre (str) : Nombre único de la tarea a buscar (pk).
+            info (Info)  : Contexto de GraphQL con request y autenticación.
+
+        Returns:
+            Optional[Tarea]: La tarea encontrada convertida a tipo GraphQL,
+            o None si no se encuentra o no se tienen permisos.
+        
+        Raises:
+            AuthenticationError  : Si el usuario no está autenticado.
+            Exception            : Si ocurre un error durante la búsqueda.
+        
         Example:
             tarea = resolver.get_tarea("tarea_importante", info)
             if tarea:
                 print(f"Tarea encontrada: {tarea.nombre}")
-                
-        Note:
-            Los usuarios regulares solo pueden ver tareas en las que están asignados.
-            Los administradores pueden ver cualquier tarea del sistema.
-                # Recargar datos después de asignar usuarios
-                self.gestor.cargar_datos()
-            else:
-                # Recargar datos después de crear la tarea
-                self.gestor.cargar_datos()
         """
         try:
             current_user = get_current_user(info.context.get("request"))
-            tarea        = self._core_tarea_to_graphql(self.gestor.tareas[input.nombre])
+            #vtarea        = self._core_tarea_to_graphql(self.gestor.tareas[input.nombre])
             tarea_core   = self.gestor.tareas.get(nombre)
             if not tarea_core:
                 return None
@@ -288,6 +292,7 @@ class GraphQLResolvers:
             
         except AuthenticationError:
             raise Exception("No autorizado")
+        
         except Exception as e:
             raise Exception(f"Error obteniendo tarea: {str(e)}")
     
@@ -792,7 +797,9 @@ class GraphQLResolvers:
             nombre             = tarea_core.nombre,
             descripcion        = tarea_core.descripcion,
             estado             = EstadoTarea(tarea_core.estado),
-            fecha_creacion     = tarea_core.fecha_creacion
+            fecha_creacion     = tarea_core.fecha_creacion.isoformat() \
+                                 if hasattr(tarea_core.fecha_creacion, "isoformat") \
+                                 else str(tarea_core.fecha_creacion)
         )
     
     # =====================
