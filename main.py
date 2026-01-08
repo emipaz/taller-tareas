@@ -1,4 +1,4 @@
-"""Interfaz de consola mejorada para el sistema de gestión de tareas.
+﻿"""Interfaz de consola mejorada para el sistema de gestión de tareas.
 
 Este módulo contiene la interfaz de usuario por consola con Rich,
 proporcionando una experiencia visual mejorada con colores, estilos
@@ -40,6 +40,7 @@ from rich.align import Align
 from rich import box
 from rich.padding import Padding
 from rich.columns import Columns
+from rich.theme import Theme
 
 # Imports del sistema
 from core import GestorSistema
@@ -75,23 +76,24 @@ class InterfazConsola:
         estableciendo los componentes necesarios para
         la interfaz visual mejorada.
         """
-        # Configurar consola Rich con ancho apropiado
-        self.console = Console(width=120)
-        
-        # Inicializar sistema
-        self.gestor = GestorSistema()
-        self.usuario_actual: Optional[Usuario] = None
         
         # Configurar colores del tema
-        self.colors = {
+        self.theme = Theme({
             'success'  : 'green',
             'error'    : 'red', 
             'info'     : 'blue',
             'warning'  : 'yellow',
             'accent'   : 'cyan',
             'user'     : 'magenta',
-            'muted'    : 'dim white'
-        }
+            'muted'    : 'white'
+        })
+        
+        # Configurar consola Rich con ancho apropiado
+        self.console = Console(width=120, theme=self.theme)
+
+        # Inicializar sistema
+        self.gestor = GestorSistema()
+        self.usuario_actual: Optional[Usuario] = None
     
     ###########################
     # UTILIDADES BÁSICAS
@@ -120,7 +122,7 @@ class InterfazConsola:
         
         # Crear contenido del título
         if subtitulo:
-            content = f"[bold blue]{titulo}[/bold blue]\n[dim]{subtitulo}[/dim]"
+            content = f"[bold blue]{titulo}[/bold blue]\n[muted]{subtitulo}[/muted]"
         else:
             content = f"[bold blue]{titulo}[/bold blue]"
             
@@ -165,7 +167,7 @@ class InterfazConsola:
         Args:
             mensaje    : Mensaje personalizado a mostrar.
         """
-        self.console.print(f"\n[dim]{mensaje}[/dim]")
+        self.console.print(f"\n[muted]{mensaje}[/muted]")
         input()
 
     ###########################
@@ -185,9 +187,9 @@ class InterfazConsola:
         bienvenida_panel = Panel(
             Align.center(
                 "[blue]🏠 Bienvenido al Sistema de Gestión de Tareas[/blue]\n\n"
-                "[dim]• Ingrese sus credenciales para acceder\n"
+                "[muted]• Ingrese sus credenciales para acceder\n"
                 "• Si es su primera vez, se le pedirá configurar una contraseña\n"
-                "• Contacte al administrador si tiene problemas de acceso[/dim]"
+                "• Contacte al administrador si tiene problemas de acceso[/muted]"
             ),
             title="Sistema de Autenticación",
             border_style="blue"
@@ -227,9 +229,9 @@ class InterfazConsola:
                     f"[green]🎉 ¡Hola {nombre}![/green]\n\n"
                     "[blue]Es tu primera vez iniciando sesión.[/blue]\n"
                     "[yellow]Debes establecer una contraseña segura.[/yellow]\n\n"
-                    "[dim]Requisitos de contraseña:\n"
+                    "[muted]Requisitos de contraseña:\n"
                     "• Mínimo 4 caracteres\n"
-                    "• Recomendado: usar letras, números y símbolos[/dim]"
+                    "• Recomendado: usar letras, números y símbolos[/muted]"
                 ),
                 title="[bold green]🔐 Configuración Inicial[/bold green]",
                 border_style="green"
@@ -274,8 +276,8 @@ class InterfazConsola:
                 welcome_panel = Panel(
                     Align.center(
                         f"[green]🎉 ¡Bienvenido {usuario.nombre}![/green]\n\n"
-                        f"[dim]Rol: {usuario.rol}\n"
-                        f"Acceso autorizado exitosamente[/dim]"
+                        f"[muted]Rol: {usuario.rol}\n"
+                        f"Acceso autorizado exitosamente[/muted]"
                     ),
                     title="[bold green]✅ Acceso Concedido[/bold green]",
                     border_style="green"
@@ -293,9 +295,9 @@ class InterfazConsola:
                         Align.center(
                             "[red]🚫 Demasiados intentos fallidos[/red]\n\n"
                             "[yellow]Por seguridad, el sistema se cerrará.[/yellow]\n\n"
-                            "[dim]Para mayor seguridad:\n"
+                            "[muted]Para mayor seguridad:\n"
                             "• Verifique sus credenciales\n"
-                            "• Contacte al administrador si olvidó su contraseña[/dim]"
+                            "• Contacte al administrador si olvidó su contraseña[/muted]"
                         ),
                         title="[bold red]⚠️ Sistema Bloqueado[/bold red]",
                         border_style="red"
@@ -319,11 +321,11 @@ class InterfazConsola:
             Align.center(
                 "[red]🚨 CONFIGURACIÓN INICIAL REQUERIDA[/red]\n\n"
                 "[yellow]El sistema no tiene administradores registrados.[/yellow]\n\n"
-                "[dim]• Este será el usuario principal del sistema\n"
+                "[muted]• Este será el usuario principal del sistema\n"
                 "• Tendrá permisos completos de administración\n"
                 "• Podrá crear y gestionar otros usuarios\n"
                 "• Es responsable de la gestión de tareas\n\n"
-                "⚠️  Asegúrese de recordar estas credenciales[/dim]"
+                "⚠️  Asegúrese de recordar estas credenciales[/muted]"
             ),
             title="[bold red]⛔ Sistema Sin Administradores[/bold red]",
             border_style="red"
@@ -334,7 +336,7 @@ class InterfazConsola:
         self.console.print("\n[cyan]📝 Configuración del Administrador Principal[/cyan]")
         
         nombre = Prompt.ask(
-            "[white]👑 Nombre del administrador[/white]",
+            "[muted]👑 Nombre del administrador[/muted]",
             default="admin",
             show_default=True
         )
@@ -345,7 +347,7 @@ class InterfazConsola:
             return
             
         # Solicitar contraseña usando getpass para mayor seguridad
-        self.console.print("\n[dim]🔐 Configure una contraseña segura para el administrador:[/dim]")
+        self.console.print("\n[muted]🔐 Configure una contraseña segura para el administrador:[/muted]")
         contraseña = getpass.getpass("🔑 Contraseña del administrador: ")
         
         if not contraseña or len(contraseña) < 4:
@@ -379,7 +381,7 @@ class InterfazConsola:
                 self.mostrar_mensaje(mensaje, "success")
                 self.console.print(
                     "\n[bold green]🎉 ¡Sistema configurado exitosamente![/bold green]\n"
-                    "[dim]Ya puede iniciar sesión con las credenciales del administrador.[/dim]"
+                    "[muted]Ya puede iniciar sesión con las credenciales del administrador.[/muted]"
                 )
             else:
                 self.mostrar_mensaje(f"Error en la configuración: {mensaje}", "error")
@@ -478,7 +480,7 @@ class InterfazConsola:
         inicio_panel = Panel(
             Align.center(titulo_arte),
             title        = "[bold blue]🚀 Bienvenido[/bold blue]",
-            subtitle     = "[dim]v1.0 - Desarrollado con Rich[/dim]",
+            subtitle     = "[red]v1.0 - Desarrollado con Rich[/red]",
             border_style = "blue"
         )
         
@@ -533,7 +535,7 @@ class InterfazConsola:
         
         # Opciones de administrador
         if usuario.es_admin():
-            tabla.add_row("---", "[bold yellow]ADMINISTRADOR[/bold yellow]", "[dim]---[/dim]")
+            tabla.add_row("---", "[bold yellow]ADMINISTRADOR[/bold yellow]", "[muted]---[/muted]")
             tabla.add_row("5", "👤 Crear Usuario", "[green]Admin Only[/green]")
             tabla.add_row("6", "📊 Ver Usuarios", "[green]Admin Only[/green]")
             tabla.add_row("7", "🚮 Eliminar Usuario", "[green]Admin Only[/green]")
@@ -596,8 +598,8 @@ class InterfazConsola:
         despedida_panel = Panel(
             Align.center(
                 "[bold blue]👋 ¡Hasta luego![/bold blue]\n\n"
-                "[dim]Gracias por usar el Sistema de Gestión de Tareas\n"
-                "Que tengas un excelente día 🌟[/dim]"
+                "[muted]Gracias por usar el Sistema de Gestión de Tareas\n"
+                "Que tengas un excelente día 🌟[/muted]"
             ),
             title        = "[bold yellow]Despedida[/bold yellow]",
             border_style = "yellow"
@@ -620,10 +622,10 @@ class InterfazConsola:
         error_panel = Panel(
             f"[red]💥 Error Crítico del Sistema[/red]\n\n"
             f"[yellow]Descripción:[/yellow] {error}\n\n"
-            "[dim]Por favor:\n"
+            "[muted]Por favor:\n"
             "• Tome una captura de pantalla de este error\n"
             "• Contacte al administrador del sistema\n"
-            "• Proporcione los pasos que llevaron al error[/dim]",
+            "• Proporcione los pasos que llevaron al error[/muted]",
             title        = "[bold red]⚠️  ERROR CRÍTICO[/bold red]",
             border_style = "red"
         )
@@ -649,9 +651,9 @@ class InterfazConsola:
         info_panel = Panel(
             Align.center(
                 "[blue]! Información importante:[/blue]\n\n"
-                "[dim]• El usuario deberá establecer su contraseña en el primer inicio\n"
+                "[muted]• El usuario deberá establecer su contraseña en el primer inicio\n"
                 "• Por defecto se asigna rol 'user' (no administrador)\n"
-                "• El nombre debe ser único en el sistema[/dim]"
+                "• El nombre debe ser único en el sistema[/muted]"
             ),
             title        = "Creación de Usuario",
             border_style = "blue"
@@ -676,7 +678,7 @@ class InterfazConsola:
         if exito:
             self.mostrar_mensaje(mensaje, "success")
             self.console.print(
-                "\n[dim]💡 El usuario deberá establecer su contraseña en el primer inicio de sesión.[/dim]"
+                "\n[muted]💡 El usuario deberá establecer su contraseña en el primer inicio de sesión.[/muted]"
             )
         else:
             self.mostrar_mensaje(mensaje, "error")
@@ -697,7 +699,7 @@ class InterfazConsola:
             # Panel cuando no hay usuarios
             no_usuarios_panel = Panel(
                 "[yellow]🚫 No hay usuarios registrados en el sistema[/yellow]\n\n"
-                "[dim]Esto es inusual. Debería existir al menos un administrador.[/dim]",
+                "[muted]Esto es inusual. Debería existir al menos un administrador.[/muted]",
                 title        = "Sin Usuarios",
                 border_style ="yellow"
             )
@@ -744,10 +746,10 @@ class InterfazConsola:
         
         stats_panel = Panel(
             f"[blue]📊 Estadísticas:[/blue]\n"
-            f"[dim]• Administradores: [yellow]{total_admins}[/yellow]\n"
+            f"[muted]• Administradores: [yellow]{total_admins}[/yellow]\n"
             f"• Usuarios regulares: [cyan]{total_users}[/cyan]\n"
-            f"• Sin contraseña: [red]{sin_password}[/red][/dim]",
-            border_style="dim white"
+            f"• Sin contraseña: [red]{sin_password}[/red][/muted]",
+            border_style="white white"
         )
         self.console.print(stats_panel)
         
@@ -778,9 +780,9 @@ class InterfazConsola:
             Align.center(
                 "[red]⚠️  ADVERTENCIA: Esta acción es irreversible[/red]\n\n"
                 "[yellow]Consideraciones importantes:[/yellow]\n"
-                "[dim]• No se pueden eliminar administradores\n"
+                "[muted]• No se pueden eliminar administradores\n"
                 "• Se perderán todas las asignaciones de tareas\n"
-                "• La acción no se puede deshacer[/dim]"
+                "• La acción no se puede deshacer[/muted]"
             ),
             title="[bold red]Zona de Peligro[/bold red]",
             border_style="red"
@@ -825,10 +827,10 @@ class InterfazConsola:
         # Mostrar información de la operación
         info_panel = Panel(
             "[blue]ℹ️  Información del reseteo:[/blue]\n\n"
-            "[dim]• Solo administradores pueden resetear contraseñas\n"
+            "[muted]• Solo administradores pueden resetear contraseñas\n"
             "• La contraseña actual se eliminará completamente\n"
             "• El usuario deberá configurar una nueva en el próximo login\n"
-            "• No se puede resetear contraseñas de administradores[/dim]",
+            "• No se puede resetear contraseñas de administradores[/muted]",
             title="Reseteo de Contraseñas",
             border_style="blue"
         )
@@ -881,7 +883,7 @@ class InterfazConsola:
             if exito:
                 self.mostrar_mensaje(mensaje, "success")
                 self.console.print(
-                    "\n[dim]💡 El usuario deberá configurar una nueva contraseña en su próximo inicio de sesión.[/dim]"
+                    "\n[muted]💡 El usuario deberá configurar una nueva contraseña en su próximo inicio de sesión.[/muted]"
                 )
             else:
                 self.mostrar_mensaje(mensaje, "error")
@@ -955,8 +957,8 @@ class InterfazConsola:
             # Panel informativo cuando no hay tareas
             no_tareas_panel = Panel(
                 "[yellow]📭 No hay tareas disponibles[/yellow]\n\n"
-                "[dim]• Si eres usuario: Contacta a un administrador para asignar tareas\n"
-                "• Si eres administrador: Crea nuevas tareas desde el menú principal[/dim]",
+                "[muted]• Si eres usuario: Contacta a un administrador para asignar tareas\n"
+                "• Si eres administrador: Crea nuevas tareas desde el menú principal[/muted]",
                 title        = "Sin Tareas",
                 border_style = "yellow"
             )
@@ -969,7 +971,7 @@ class InterfazConsola:
         tabla_tareas.add_column("ID",             style = "cyan"    , width = 3)
         tabla_tareas.add_column("Nombre",         style = "white"   , width = 28)
         tabla_tareas.add_column("Estado",         style = "green"   , width = 14)
-        tabla_tareas.add_column("Usuarios",       style = "magenta" , width = 16)
+        tabla_tareas.add_column("Usuarios",       style = "bright_magenta" , width = 16)
         tabla_tareas.add_column("Fecha Creación", style = "blue"    , width = 22)
         
         # Llenar tabla con datos
@@ -981,7 +983,7 @@ class InterfazConsola:
                 estado_display = "[yellow]⏳ Pendiente[/yellow]"
             
             # Usuarios asignados
-            usuarios_display = ', '.join(tarea.usuarios_asignados) if tarea.usuarios_asignados else '[dim]Sin asignar[/dim]'
+            usuarios_display = ', '.join(tarea.usuarios_asignados) if tarea.usuarios_asignados else '[muted]Sin asignar[/muted]'
             
             tabla_tareas.add_row(
                 str(i),
@@ -1054,7 +1056,7 @@ class InterfazConsola:
         if tarea.usuarios_asignados:
             usuarios_texto = "\n".join([f"• {usuario}" for usuario in tarea.usuarios_asignados])
         else:
-            usuarios_texto = "[dim]No hay usuarios asignados[/dim]"
+            usuarios_texto = "[muted]No hay usuarios asignados[/muted]"
             
         usuarios_panel = Panel(
             usuarios_texto,
@@ -1067,10 +1069,10 @@ class InterfazConsola:
         if tarea.comentarios:
             comentarios_texto = ""
             for i, (comentario, usuario, fecha) in enumerate(tarea.comentarios, 1):
-                comentarios_texto += f"[bold cyan]{i}.[/bold cyan] [bold]{usuario}[/bold] - [dim]{fecha}[/dim]\n"
+                comentarios_texto += f"[bold cyan]{i}.[/bold cyan] [bold]{usuario}[/bold] - [muted]{fecha}[/muted]\n"
                 comentarios_texto += f"   {comentario}\n\n"
         else:
-            comentarios_texto = "[dim]No hay comentarios disponibles[/dim]"
+            comentarios_texto = "[muted]No hay comentarios disponibles[/muted]"
             
         comentarios_panel = Panel(
             comentarios_texto.rstrip(),
@@ -1137,9 +1139,9 @@ class InterfazConsola:
                 self.console.print(tarea_info)
                 
                 # Solicitar comentario
-                self.console.print("\n[dim]💡 Proporcione su comentario sobre esta tarea:[/dim]")
+                self.console.print("\n[muted]💡 Proporcione su comentario sobre esta tarea:[/muted]")
                 comentario = Prompt.ask(
-                    "[white]✍️ Comentario[/white]",
+                    "[muted]✍️ Comentario[/muted]",
                     default="",
                     show_default=False
                 )
@@ -1188,10 +1190,10 @@ class InterfazConsola:
         info_panel = Panel(
             Align.center(
                 "[green]📝 Creación de Nueva Tarea[/green]\n\n"
-                "[dim]• Proporcione un nombre descriptivo y único\n"
+                "[muted]• Proporcione un nombre descriptivo y único\n"
                 "• La descripción debe ser clara y detallada\n"
                 "• La tarea se creará en estado 'pendiente'\n"
-                "• Podrá asignar usuarios después de la creación[/dim]"
+                "• Podrá asignar usuarios después de la creación[/muted]"
             ),
             title="Información",
             border_style="green"
@@ -1203,7 +1205,7 @@ class InterfazConsola:
         
         # Solicitar nombre de la tarea
         nombre = Prompt.ask(
-            "[white]📌 Nombre de la tarea[/white]",
+            "[muted]📌 Nombre de la tarea[/muted]",
             default="",
             show_default = False
         )
@@ -1214,9 +1216,9 @@ class InterfazConsola:
             return
         
         # Solicitar descripción
-        self.console.print("\n[dim]💬 Proporcione una descripción detallada de la tarea:[/dim]")
+        self.console.print("\n[muted]💬 Proporcione una descripción detallada de la tarea:[/muted]")
         descripcion = Prompt.ask(
-            "[white]📄 Descripción[/white]",
+            "[muted]📄 Descripción[/muted]",
             default="",
             show_default=False
         )
@@ -1232,7 +1234,7 @@ class InterfazConsola:
                 f"[bold]📌 Nombre:[/bold] {nombre.strip()}\n\n"
                 f"[bold]📄 Descripción:[/bold]\n{descripcion.strip()}\n\n"
                 f"[bold]📅 Estado inicial:[/bold] [yellow]Pendiente[/yellow]\n"
-                f"[bold]👥 Usuarios asignados:[/bold] [dim]Ninguno (se puede asignar después)[/dim]"
+                f"[bold]👥 Usuarios asignados:[/bold] [muted]Ninguno (se puede asignar después)[/muted]"
             ),
             title="[bold blue]👀 Vista Previa de la Tarea[/bold blue]",
             border_style="blue"
@@ -1246,7 +1248,7 @@ class InterfazConsola:
             if exito:
                 self.mostrar_mensaje(mensaje, "success")
                 self.console.print(
-                    "\n[dim]💡 Puede asignar usuarios a esta tarea desde el menú 'Ver tareas'.[/dim]"
+                    "\n[muted]💡 Puede asignar usuarios a esta tarea desde el menú 'Ver tareas'.[/muted]"
                 )
             else:
                 self.mostrar_mensaje(mensaje, "error")
@@ -1269,10 +1271,10 @@ class InterfazConsola:
             error_panel = Panel(
                 f"[red]❌ Error al obtener estadísticas[/red]\n\n"
                 f"[yellow]Detalles:[/yellow] {stats['error']}\n\n"
-                "[dim]Posibles causas:\n"
+                "[muted]Posibles causas:\n"
                 "• Archivos de datos corruptos\n"
                 "• Problemas de permisos\n"
-                "• Error en el sistema de archivos[/dim]",
+                "• Error en el sistema de archivos[/muted]",
                 title        = "[bold red]Error del Sistema[/bold red]",
                 border_style = "red"
             )
@@ -1368,18 +1370,18 @@ class InterfazConsola:
                 progreso_estado = "[red]Necesita atención[/red]"
         else:
             progreso_general = 0
-            progreso_estado = "[dim]Sin datos[/dim]"
+            progreso_estado = "[muted]Sin datos[/muted]"
         
         resumen_panel = Panel(
             Align.center(
                 f"[bold blue]📈 Resumen Ejecutivo[/bold blue]\n\n"
-                f"[white]• Progreso general de tareas: [bold]{progreso_general:.1f}%[/bold] {progreso_estado}\n"
+                f"[muted]• Progreso general de tareas: [bold]{progreso_general:.1f}%[/bold] {progreso_estado}\n"
                 f"• Total de usuarios registrados: [bold]{total_usuarios}[/bold]\n"
                 f"• Usuarios sin configurar: [bold]{stats['usuarios']['sin_password']}[/bold]\n"
-                f"• Cobertura administrativa: [bold]{admin_pct:.1f}%[/bold][/white]\n\n"
-                f"[dim]💡 Recomendación: "
+                f"• Cobertura administrativa: [bold]{admin_pct:.1f}%[/bold][/muted]\n\n"
+                f"[muted]💡 Recomendación: "
                 + ("Excelente gestión del sistema" if progreso_general >= 80 and stats['usuarios']['sin_password'] == 0
-                   else "Revisar tareas pendientes y usuarios sin configurar") + "[/dim]"
+                   else "Revisar tareas pendientes y usuarios sin configurar") + "[/muted]"
             ),
             title="[bold green]📋 Estado General[/bold green]",
             border_style="green"
@@ -1453,7 +1455,7 @@ class InterfazConsola:
                     f"[bold]📝 Tarea:[/bold] {tarea.nombre}\n\n"
                     f"[bold]📊 Estado actual:[/bold] {'✅ Finalizada' if tarea.esta_finalizada() else '⏳ Pendiente'}\n"
                     f"[bold]🎯 Acción:[/bold] {accion_texto}\n\n"
-                    f"[dim]💡 {accion_desc}[/dim]",
+                    f"[muted]💡 {accion_desc}[/muted]",
                     title="[bold yellow]🔄 Confirmación de Cambio[/bold yellow]",
                     border_style="yellow"
                 )
@@ -1509,7 +1511,7 @@ class InterfazConsola:
         for i, tarea in enumerate(tareas, start=1):
             estado_display = "✅ Finalizada" if tarea.esta_finalizada() else "⏳ Pendiente"
             estado_style = "green" if tarea.esta_finalizada() else "yellow"
-            usuarios_display = ', '.join(tarea.usuarios_asignados) if tarea.usuarios_asignados else '[dim]Sin asignar[/dim]'
+            usuarios_display = ', '.join(tarea.usuarios_asignados) if tarea.usuarios_asignados else '[muted]Sin asignar[/muted]'
             
             tabla_tareas.add_row(
                 str(i),
@@ -1551,7 +1553,7 @@ class InterfazConsola:
                     if usuario.nombre in tarea.usuarios_asignados:
                         estado_asignacion = "[green]✅ Asignado[/green]"
                     else:
-                        estado_asignacion = "[dim]➕ Disponible[/dim]"
+                        estado_asignacion = "[muted]➕ Disponible[/muted]"
                         
                     rol_display = "🔑 Admin" if usuario.es_admin() else "👤 User"
                     
@@ -1621,8 +1623,8 @@ class InterfazConsola:
             # Panel informativo cuando no hay tareas finalizadas
             no_finalizadas_panel = Panel(
                 "[yellow]¡ No hay tareas finalizadas para eliminar ![/yellow]\n\n"
-                "[dim]• Solo se pueden eliminar tareas en estado 'Finalizada'\n"
-                "• Primero debe finalizar las tareas que desee eliminar[/dim]",
+                "[muted]• Solo se pueden eliminar tareas en estado 'Finalizada'\n"
+                "• Primero debe finalizar las tareas que desee eliminar[/muted]",
                 title="Sin Tareas Finalizadas",
                 border_style="yellow"
             )
@@ -1638,7 +1640,7 @@ class InterfazConsola:
         tabla_finalizadas.add_column("Fecha Finalización", style="green", width=20)
         
         for i, tarea in enumerate(tareas_finalizadas, start=1):
-            usuarios_display = ', '.join(tarea.usuarios_asignados) if tarea.usuarios_asignados else '[dim]Sin asignar[/dim]'
+            usuarios_display = ', '.join(tarea.usuarios_asignados) if tarea.usuarios_asignados else '[muted]Sin asignar[/muted]'
             
             tabla_finalizadas.add_row(
                 str(i),
@@ -1654,10 +1656,10 @@ class InterfazConsola:
             Align.center(
                 "[red]¡¡ ADVERTENCIA: Esta acción es IRREVERSIBLE !![/red]\n\n"
                 "[yellow]Al eliminar una tarea:[/yellow]\n"
-                "[dim]• Se perderá toda la información de la tarea\n"
+                "[muted]• Se perderá toda la información de la tarea\n"
                 "• Se perderán todos los comentarios asociados\n"
                 "• No se puede recuperar la información eliminada\n"
-                "• Solo se pueden eliminar tareas finalizadas[/dim]"
+                "• Solo se pueden eliminar tareas finalizadas[/muted]"
             ),
             title="[bold red]Zona de Peligro[/bold red]",
             border_style="red"
