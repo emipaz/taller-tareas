@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mis Tareas</title>
+    <link rel="stylesheet" href="/static/main.css" />
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+  </head>
+  <body>
+    <header>
+      <h1>Mis Tareas</h1>
+      <div class="user-meta">Usuario: {{ user.nombre }} · <a href="/logout">Cerrar sesión</a></div>
+    </header>
+
+    <main>
+      <div class="controls">
+        <button hx-get="/tareas/usuario/{{ user.nombre }}" hx-target="#lista">Recargar tareas</button>
+      </div>
+
+      <section id="lista">
+        {% include "_tareas_fragment.html" %}
+      </section>
+    </main>
+  </body>
+</html>

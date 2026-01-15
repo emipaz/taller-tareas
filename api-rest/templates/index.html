@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gestión de Tareas - Landing</title>
+    <link rel="stylesheet" href="/static/main.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Gestión de Tareas</h1>
+    </header>
+
+    <main class="landing">
+      <section class="hero">
+        <h2>Bienvenido</h2>
+        <p>Ingresa con tu usuario para ver tus tareas.</p>
+      </section>
+
+      {% if error %}
+      <div class="error">{{ error }}</div>
+      {% endif %}
+
+      <section class="login">
+        <form method="post" action="/login">
+          <label>Usuario<br><input name="username" required></label>
+          <label>Contraseña<br><input name="password" type="password" required></label>
+          <div><button type="submit">Ingresar</button></div>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

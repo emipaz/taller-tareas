@@ -46,6 +46,12 @@ from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.security import HTTPBearer
+import logging
+
+# Logging básico para depuración
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
+logger = logging.getLogger("api_rest")
+
 
 # Importaciones de módulos internos 
 from jwt_auth import (
@@ -146,6 +152,25 @@ app.add_middleware(
 # Esta es la única instancia que maneja el estado del sistema
 gestor = GestorSistema()
 
+# Montar carpeta static (si existe) y registrar rutas web separadas
+try:
+    from fastapi.staticfiles import StaticFiles
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    os.makedirs(static_dir, exist_ok=True)
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+except Exception:
+    pass
+
+# Registrar router de páginas web (htmx/Jinja2)
+try:
+    from web import router as web_router
+    app.include_router(web_router)
+except Exception as e:
+    print(f"⚠️ Error al cargar módulo web: {e}")
+    # Si el módulo web aún no existe (durante cambios), ignorar
+    print("⚠️ Módulo web no disponible, ignorando rutas web")
+    pass
+
 
 def get_gestor() -> GestorSistema:
     """Dependency injection para obtener la instancia del gestor.
@@ -227,7 +252,7 @@ async def general_exception_handler(request, exc):
 # ENDPOINTS DE SISTEMA
 # ================================
 
-@app.get("/", response_model=HealthResponse)
+@app.get("/api", response_model=HealthResponse)
 async def root():
     """Endpoint raíz que devuelve el estado básico de la API.
     
@@ -261,7 +286,7 @@ async def root():
     )
 
 
-@app.get("/health", response_model=HealthResponse)
+@app.get("/api/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint para monitoreo del sistema.
     
@@ -343,6 +368,7 @@ async def get_estadisticas(
     ```
     """
     try:
+        logger.debug("get_estadisticas called by %s", getattr(current_user, 'username', None))
         stats = gestor_sistema.obtener_estadisticas_sistema()
         
         # Verificar si hubo error en la obtención de estadísticas
@@ -358,122 +384,7 @@ async def get_estadisticas(
         )
     except Exception as e:
         raise HTTPException(status_code = 500, detail = str(e))
-
-
-
-    """Documentación Swagger UI con modo oscuro forzado completamente.
     
-    Versión de la documentación que fuerza el modo oscuro en toda
-    la interfaz usando CSS personalizado inyectado.
-    
-    **Características:**
-    - 🌙 **Modo oscuro completo** sin opciones de cambio
-    - 💫 **CSS optimizado** para mejor rendimiento
-    - 🔄 **Sin recargas** - Oscuro desde el primer load
-    - 📱 **Completamente responsive** en móviles
-    - ⚡ **Transiciones suaves** y efectos hover mejorados
-    """
-    
-    html_content = '''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>🌙 Sistema de Gestión de Tareas - Modo Oscuro</title>
-        <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui.css" />
-        <link rel="stylesheet" type="text/css" href="/dark-mode.css" />
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-            /* Carga inmediata de modo oscuro */
-            body {
-                background-color: #1a1a1a !important;
-                color: #e0e0e0 !important;
-                margin: 0;
-                padding: 0;
-            }
-            
-            /* Loading spinner oscuro */
-            .loading {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                color: #4a9eff;
-                font-size: 18px;
-                z-index: 1000;
-            }
-            
-            /* Ocultar loading cuando esté listo */
-            .swagger-ui-loaded .loading {
-                display: none;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="loading">🌙 Cargando modo oscuro...</div>
-        <div id="swagger-ui"></div>
-        
-        <script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-bundle.js"></script>
-        <script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-standalone-preset.js"></script>
-        <script>
-            // Configuración de Swagger UI con modo oscuro forzado
-            const ui = SwaggerUIBundle({
-                url: '/openapi.json',
-                dom_id: '#swagger-ui',
-                deepLinking: true,
-                presets: [
-                    SwaggerUIBundle.presets.apis,
-                    SwaggerUIStandalonePreset
-                ],
-                plugins: [
-                    SwaggerUIBundle.plugins.DownloadUrl
-                ],
-                layout: "StandaloneLayout",
-                syntaxHighlight: {
-                    theme: "arta"  // Tema oscuro forzado
-                },
-                tryItOutEnabled: true,
-                filter: true,
-                showCommonExtensions: true,
-                displayRequestDuration: true,
-                persistAuthorization: true,
-                defaultModelsExpandDepth: 2,
-                defaultModelExpandDepth: 2,
-                docExpansion: "list",
-                onComplete: () => {
-                    console.log('🌙 Swagger UI cargado en modo oscuro');
-                    document.body.classList.add('swagger-ui-loaded');
-                    
-                    // Asegurar que todo esté en modo oscuro
-                    setTimeout(() => {
-                        document.body.style.backgroundColor = '#1a1a1a';
-                        const swaggerContainer = document.querySelector('.swagger-ui');
-                        if (swaggerContainer) {
-                            swaggerContainer.style.backgroundColor = '#1a1a1a';
-                        }
-                    }, 100);
-                }
-            });
-            
-            // Forzar modo oscuro en toda la página
-            document.addEventListener('DOMContentLoaded', function() {
-                // Aplicar estilos oscuros inmediatamente
-                document.body.style.backgroundColor = '#1a1a1a';
-                document.body.style.color = '#e0e0e0';
-            });
-            
-            // OAuth configuración
-            ui.initOAuth({
-                clientId: "swagger-ui",
-                realm: "swagger-ui-realm",
-                appName: "swagger-ui",
-                scopeSeparator: " "
-            });
-        </script>
-    </body>
-    </html>
-    '''
-    
-    return HTMLResponse(content=html_content)
 
 
 # ================================
@@ -558,6 +469,7 @@ async def listar_usuarios(
         - Paginación cursor-based para datasets muy grandes
     """
     try:
+        logger.debug("listar_usuarios called by %s page=%s limit=%s search=%s rol=%s", getattr(current_user, 'username', None), page, limit, search, rol)
         # Validar parámetros de paginación
         if page < 1:
             raise HTTPException(
@@ -958,6 +870,7 @@ async def login(
         use el endpoint /auth/me con el access_token obtenido.
     """
     try:
+        logger.debug("/auth/login called for user %s", login_data.nombre)
         usuario, mensaje = gestor_sistema.autenticar_usuario(
             login_data.nombre, 
             login_data.contraseña
@@ -1426,6 +1339,7 @@ async def listar_tareas(
         Para filtrar por usuario específico, use /tareas/usuario/{nombre}.
     """
     try:
+        logger.debug("/tareas called by %s", getattr(current_user, 'username', None))
         tareas = gestor_sistema.cargar_tareas()
         tareas_response = []
         
@@ -1449,6 +1363,7 @@ async def listar_tareas(
                 esta_finalizada    = tarea.esta_finalizada()
             ))
         
+        logger.debug("/tareas returning %s tareas", len(tareas_response))
         return TareaListResponse(tareas = tareas_response)
     except Exception as e:
         raise HTTPException(status_code = 500, detail = str(e))
@@ -1599,6 +1514,7 @@ async def obtener_tareas_usuario(
         Útil para dashboards personalizados y vistas de usuario.
     """
     try:
+        logger.debug("/tareas/usuario/%s called by %s include_finalizadas=%s", nombre_usuario, getattr(current_user, 'username', None), incluir_finalizadas)
         tareas          = gestor_sistema.obtener_tareas_usuario(nombre_usuario, incluir_finalizadas)
         tareas_response = []
         

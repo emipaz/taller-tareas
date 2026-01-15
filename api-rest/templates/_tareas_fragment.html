@@ -1,0 +1,13 @@
+<div class="tareas-fragment">
+  <ul>
+  {% for tarea in tareas %}
+    <li class="tarea-item">
+      <strong>{{ tarea.nombre }}</strong>
+      <div class="desc">{{ tarea.descripcion }}</div>
+      <div class="meta">Estado: {{ tarea.estado }}{% if tarea.usuarios_asignados %} · Asignados: {{ tarea.usuarios_asignados|join(', ') }}{% endif %}</div>
+    </li>
+  {% else %}
+    <li>No hay tareas aún.</li>
+  {% endfor %}
+  </ul>
+</div>
