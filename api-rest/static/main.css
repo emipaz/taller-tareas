@@ -1,7 +1,8 @@
 body {
   font-family: Arial, Helvetica, sans-serif;
   margin: 24px;
-  color: #222;
+  color: #f8f0f0;
+  background: #201f1f;
 }
 h1 { margin: 0 0 12px 0; }
 .controls { margin-bottom: 12px; }
