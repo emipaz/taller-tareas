@@ -1,3 +1,28 @@
+{# 
+  Plantilla: Página de Login (Landing)
+  
+  Descripción:
+    Página principal de acceso al sistema de gestión de tareas.
+    Presenta un formulario de autenticación para que los usuarios
+    ingresen con sus credenciales.
+  
+  Variables de contexto:
+    - error (str, opcional): Mensaje de error si el login falló
+  
+  Endpoints:
+    - POST /login: Procesa las credenciales del usuario
+  
+  Dependencias:
+    - /static/main.css: Estilos globales del sistema
+    - /static/common.js: Funciones JavaScript compartidas
+  
+  Flujo:
+    1. Usuario ingresa nombre de usuario y contraseña
+    2. Puede ver/ocultar contraseña con el icono del ojo
+    3. Al enviar, se valida contra el sistema
+    4. Si hay error, se muestra mensaje en rojo
+    5. Si es exitoso, redirige al dashboard
+#}
 <!doctype html>
 <html lang="es">
   <head>
@@ -8,24 +33,30 @@
     <script src="/static/common.js"></script>
   </head>
   <body>
+    {# Encabezado principal #}
     <header>
       <h1>Gestión de Tareas</h1>
     </header>
 
     <main class="landing">
+      {# Sección hero con mensaje de bienvenida #}
       <section class="hero">
         <h2>Bienvenido</h2>
         <p>Ingresa con tu usuario para ver tus tareas.</p>
       </section>
 
+      {# Mostrar mensaje de error si existe (ej: credenciales inválidas) #}
       {% if error %}
       <div class="error">{{ error }}</div>
       {% endif %}
 
+      {# Formulario de autenticación #}
       <section class="login">
         <form method="post" action="/login">
+          {# Campo de nombre de usuario #}
           <label>Usuario<br><input name="username" required></label>
           
+          {# Campo de contraseña con toggle de visibilidad #}
           <div class="password-input-wrapper">
             <label>Contraseña<br>
               <input id="password" name="password" type="password" required>
@@ -33,6 +64,7 @@
             </label>
             
           </div>
+        <div><button type="submit">Ingresar</button></div>
         </form>
       </section>
     </main>
