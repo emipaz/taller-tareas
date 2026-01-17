@@ -395,41 +395,9 @@ class LoginRequest(BaseModel):
     )
 
 
-class LoginResponse(BaseResponse):
-    """Respuesta del proceso de autenticación.
-    
-    Extiende BaseResponse agregando información específica del login.
-    Incluye datos del usuario autenticado y token de sesión.
-    
-    Attributes:
-        usuario (UsuarioResponse, optional): Información del usuario si login exitoso.
-        token (str, optional): Token de sesión (placeholder para implementar JWT).
-        
-    Example:
-        ```python
-        # Login exitoso:
-        {
-            "success": true,
-            "message": "Autenticación exitosa",
-            "usuario": {
-                "nombre": "juan_perez",
-                "rol": "user",
-                "tiene_password": true
-            },
-            "token": "session_token_placeholder"
-        }
-        
-        # Login fallido:
-        {
-            "success": false,
-            "message": "Contraseña incorrecta",
-            "usuario": null,
-            "token": null
-        }
-        ```
-    """
-    usuario : Optional[UsuarioResponse] = None
-    token   : Optional[str]             = None
+# NOTA: El modelo de respuesta para /auth/login es TokenResponse (definido en jwt_auth.py)
+# que devuelve access_token, refresh_token, token_type y expires_in según el estándar JWT.
+# No se necesita un LoginResponse separado ya que TokenResponse cubre las necesidades de autenticación.
 
 
 class PasswordSetRequest(BaseModel):

@@ -176,11 +176,13 @@ python -m pytest api-rest/tests/ --cov=api-rest --cov-report=html
 
 Todos los modelos están definidos en `api_models.py` con validación Pydantic:
 
-- `LoginRequest` / `LoginResponse`
-- `UserCreateRequest` / `UserResponse`
-- `TaskCreateRequest` / `TaskResponse`
-- `TokenResponse` / `EstadisticasResponse`
+- `LoginRequest` / `TokenResponse` (autenticación JWT)
+- `UsuarioCreate` / `UsuarioResponse`
+- `TareaCreate` / `TareaResponse`
+- `EstadisticasResponse` / `PaginationMeta`
 - Y muchos más...
+
+**Nota:** `TokenResponse` está definido en `jwt_auth.py` ya que es específico de autenticación JWT.
 
 ## 🔧 Configuración
 

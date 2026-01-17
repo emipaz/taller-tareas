@@ -73,7 +73,7 @@ from api_models import (
     # Usuario models
     UsuarioCreate, UsuarioCreateAdmin, UsuarioResponse, UsuarioListResponse,
     UsuarioListPaginatedResponse, PaginationMeta, FilterMeta,
-    LoginRequest, LoginResponse, PasswordSetRequest, PasswordChangeRequest, PasswordResetRequest,
+    LoginRequest, PasswordSetRequest, PasswordChangeRequest, PasswordResetRequest,
     
     # Tarea models  
     TareaCreate, TareaResponse, TareaListResponse, TareaResumenResponse,
@@ -825,14 +825,16 @@ async def login(
     login_data: LoginRequest,
     gestor_sistema: GestorSistema = Depends(get_gestor)
 ):
-    """Autentica un usuario en el sistema y devuelve tokens JWT.
+    """Autentica un usuario y devuelve tokens JWT (estándar OAuth2/JWT).
     
-    Verifica las credenciales del usuario y devuelve access y refresh tokens.
-    Este es el endpoint principal para iniciar sesión en el sistema.
+    Valida las credenciales del usuario (nombre + contraseña) y, si son correctas,
+    genera un par de tokens JWT según el estándar RFC 6749 (OAuth2) y RFC 7519 (JWT):
+    - **Access Token**: Token de corta duración para autenticar requests (30 min)
+    - **Refresh Token**: Token de larga duración para renovar el access token (7 días)
     
     Flujos posibles:
-    1. Login exitoso: Usuario y contraseña correctos - devuelve tokens JWT
-    2. Usuario sin contraseña: Error 401 - debe establecer contraseña inicial
+    1. Login exitoso: Usuario y contraseña correctos - devuelve TokenResponse con JWT
+    2. Usuario sin contraseña: Error 401 - debe establecer contraseña inicial vía /auth/set-password
     3. Credenciales inválidas: Error 401 - usuario no existe o contraseña incorrecta
     
     **Parámetros:**
