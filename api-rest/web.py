@@ -259,7 +259,9 @@ async def login(request: Request, username: str = Form(...), password: str = For
     logger.debug("web: /auth/login resp status=%s body=%s", resp_api.status_code, resp_api.text[:200])
 
     if resp_api.status_code == 401:
-        detail = resp_api.json().get("detail", "")
+        resp_json = resp_api.json()
+        # Buscar el mensaje en 'detail' o 'message' (depende del formato de respuesta)
+        detail = resp_json.get("detail", "") or resp_json.get("message", "")
         if "sin contraseña" in detail or "sin_password" in detail:
             return templates.TemplateResponse("set_password.html", {"request": request, "username": username})
         return templates.TemplateResponse("index.html", {"request": request, "error": "Credenciales inválidas"})
