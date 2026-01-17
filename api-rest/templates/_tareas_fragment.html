@@ -1,12 +1,29 @@
+{# 
+  Fragmento: Lista de Tareas
+  
+  Descripción:
+    Template parcial que renderiza la lista de tareas del usuario.
+    Se incluye en dashboard.html y puede ser actualizado dinámicamente
+    mediante HTMX sin recargar la página completa.
+  
+  Variables de contexto:
+    - tareas (List[Tarea]): Lista de tareas a mostrar
+  
+  Uso:
+    {% include "_tareas_fragment.html" %}
+#}
 <div class="tareas-fragment">
   <ul>
+  {# Iterar sobre todas las tareas #}
   {% for tarea in tareas %}
+    {# Cada tarea se muestra como un item de lista #}
     <li class="tarea-item">
       <strong>{{ tarea.nombre }}</strong>
       <div class="desc">{{ tarea.descripcion }}</div>
       <div class="meta">Estado: {{ tarea.estado }}{% if tarea.usuarios_asignados %} · Asignados: {{ tarea.usuarios_asignados|join(', ') }}{% endif %}</div>
     </li>
   {% else %}
+    {# Mensaje cuando no hay tareas #}
     <li>No hay tareas aún.</li>
   {% endfor %}
   </ul>

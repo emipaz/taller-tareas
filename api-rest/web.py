@@ -230,7 +230,7 @@ def _get_tareas_for_user(client: TestClient, headers: dict, user: dict):
 
 #############################
 # Endpoints administrativos #
-############################@
+############################
 
 @router.post("/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
@@ -327,6 +327,64 @@ async def set_password(request: Request, username: str = Form(...), password: st
     return resp
 
 
+@router.post("/change-password")
+@token_required
+async def change_password_web(request: Request, current_password: str = Form(...), new_password: str = Form(...)):
+    """Cambia la contraseña del usuario autenticado.
+
+    Llama al endpoint interno `/auth/change-password` para cambiar la
+    contraseña del usuario actual.
+
+    Args:
+        request (Request): Petición entrante.
+        current_password (str): Contraseña actual.
+        new_password (str): Nueva contraseña.
+
+    Returns:
+        TemplateResponse | RedirectResponse: Renderiza el dashboard con
+            mensaje de éxito o error.
+    """
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return RedirectResponse(url='/', status_code=303)
+
+    client, headers, user = res
+    
+    # Llamar al endpoint de cambio de contraseña
+    resp_api = client.post(
+        "/auth/change-password",
+        json={
+            "nombre": user["nombre"],
+            "contraseña_actual": current_password,
+            "contraseña_nueva": new_password
+        }
+    )
+    
+    tareas = _get_tareas_for_user(client, headers, user)
+    
+    if resp_api.status_code == 200:
+        return templates.TemplateResponse(
+            "dashboard.html",
+            {
+                "request": request,
+                "user": user,
+                "tareas": tareas,
+                "success": "Contraseña cambiada exitosamente"
+            }
+        )
+    else:
+        error_detail = resp_api.json().get("detail", "Error al cambiar contraseña")
+        return templates.TemplateResponse(
+            "dashboard.html",
+            {
+                "request": request,
+                "user": user,
+                "tareas": tareas,
+                "error": error_detail
+            }
+        )
+
+
 @router.get("/logout")
 def logout():
     """Cierra sesión del usuario eliminando cookies de autenticación.
@@ -341,6 +399,7 @@ def logout():
     resp.delete_cookie("access_token")
     resp.delete_cookie("refresh_token")
     return resp
+
 
 ##########################
 # Endpoints de la UI web #

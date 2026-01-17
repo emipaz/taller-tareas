@@ -1,3 +1,34 @@
+{# 
+  Plantilla: Dashboard del Usuario
+  
+  Descripción:
+    Panel principal del usuario autenticado. Muestra navbar con opciones,
+    formulario para cambiar contraseña, y lista de tareas asignadas.
+    Usa HTMX para actualizaciones dinámicas sin recargar la página.
+  
+  Variables de contexto:
+    - user (Usuario): Objeto del usuario autenticado (nombre, rol)
+    - tareas (List[Tarea]): Lista de tareas asignadas al usuario
+    - error (str, opcional): Mensaje de error
+    - success (str, opcional): Mensaje de éxito
+  
+  Endpoints:
+    - POST /change-password: Cambiar contraseña del usuario
+    - GET /tareas/usuario/{nombre}: Obtener tareas del usuario (HTMX)
+    - GET /logout: Cerrar sesión
+  
+  Dependencias:
+    - /static/main.css: Estilos globales
+    - /static/common.js: Función togglePasswordVisibility
+    - htmx.org: Interactividad sin JavaScript manual
+    - _tareas_fragment.html: Template parcial de tareas
+  
+  Funcionalidades:
+    - Navbar con nombre del usuario y opciones
+    - Formulario colapsable para cambiar contraseña
+    - Validación de contraseñas coincidentes
+    - Recarga dinámica de tareas con HTMX
+#}
 <!doctype html>
 <html lang="es">
   <head>
@@ -6,21 +37,137 @@
     <title>Mis Tareas</title>
     <link rel="stylesheet" href="/static/main.css" />
     <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+    <script src="/static/common.js"></script>
   </head>
   <body>
-    <header>
-      <h1>Mis Tareas</h1>
-      <div class="user-meta">Usuario: {{ user.nombre }} · <a href="/logout">Cerrar sesión</a></div>
-    </header>
+    {# Barra de navegación superior #}
+    <nav class="navbar">
+      <div class="navbar-container">
+        {# Información del usuario actual #}
+        <div class="navbar-user">
+          <span class="user-name">{{ user.nombre }}</span>
+          <span class="user-role">({{ user.rol }})</span>
+        </div>
+        {# Enlaces de acción #}
+        <div class="navbar-links">
+          <a href="#" onclick="togglePasswordForm(); return false;">Cambiar contraseña</a>
+          <a href="/logout">Cerrar sesión</a>
+        </div>
+      </div>
+    </nav>
 
+    {# Mensajes de feedback al usuario #}
+    {% if error %}
+    <div class="error" style="background-color: #f8d7da; color: #721c24; padding: 10px; margin: 10px auto; max-width: 520px; border-radius: 4px; border: 1px solid #f5c6cb;">
+      {{ error }}
+    </div>
+    {% endif %}
+
+    {% if success %}
+    <div class="success" style="background-color: #d4edda; color: #155724; padding: 10px; margin: 10px auto; max-width: 520px; border-radius: 4px; border: 1px solid #c3e6cb;">
+      {{ success }}
+    </div>
+    {% endif %}
+
+    {# Formulario colapsable para cambiar contraseña (oculto por defecto) #}
+    <div id="password-form" style="display: none;" class="centered-form">
+      <h3>Cambiar Contraseña</h3>
+      <form method="post" action="/change-password" onsubmit="return validatePassword()">
+        {# Campo de contraseña actual (para validar que es el usuario correcto) #}
+        <div style="margin-bottom: 10px;">
+          <label>Contraseña actual:<br>
+            <div class="password-input-wrapper">
+              <input id="current_password" name="current_password" type="password" required>
+              <span class="toggle-password" onclick="togglePasswordVisibility('current_password', this)">👁️</span>
+            </div>
+          </label>
+        </div>
+        {# Campo de nueva contraseña #}
+        <div style="margin-bottom: 10px;">
+          <label>Nueva contraseña:<br>
+            <div class="password-input-wrapper">
+              <input id="new_password" name="new_password" type="password" required>
+              <span class="toggle-password" onclick="togglePasswordVisibility('new_password', this)">👁️</span>
+            </div>
+          </label>
+        </div>
+        {# Campo de confirmación (validación en cliente) #}
+        <div style="margin-bottom: 10px;">
+          <label>Confirmar nueva contraseña:<br>
+            <div class="password-input-wrapper">
+              <input id="confirm_password" type="password" required>
+              <span class="toggle-password" onclick="togglePasswordVisibility('confirm_password', this)">👁️</span>
+            </div>
+          </label>
+        </div>
+        {# Mensaje de error si las contraseñas no coinciden #}
+        <div id="password-error" style="color: #ff6b6b; font-size: 0.9em; margin-bottom: 10px; display: none;">
+          Las contraseñas no coinciden
+        </div>
+        <div>
+          <button type="submit">Cambiar</button>
+          <button type="button" onclick="togglePasswordForm()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+
+    {# Contenido principal: lista de tareas #}
     <main>
       <div class="controls">
+        {# Botón HTMX para recargar tareas sin refrescar página #}
         <button hx-get="/tareas/usuario/{{ user.nombre }}" hx-target="#lista">Recargar tareas</button>
       </div>
 
+      {# Sección donde se renderizan las tareas (actualizable vía HTMX) #}
       <section id="lista">
         {% include "_tareas_fragment.html" %}
       </section>
     </main>
+
+    {# Scripts locales para funcionalidad del dashboard #}
+    <script>
+      /**
+       * Alterna la visibilidad del formulario de cambio de contraseña.
+       * 
+       * Muestra/oculta el formulario colapsable y limpia los campos
+       * cuando se abre para evitar que queden valores anteriores.
+       * 
+       * @returns {void}
+       */
+      function togglePasswordForm() {
+        var form = document.getElementById('password-form');
+        var errorMsg = document.getElementById('password-error');
+        if (form.style.display === 'none') {
+          form.style.display = 'block';
+          // Limpiar campos al abrir
+          document.getElementById('new_password').value = '';
+          document.getElementById('confirm_password').value = '';
+          errorMsg.style.display = 'none';
+        } else {
+          form.style.display = 'none';
+        }
+      }
+
+      /**
+       * Valida que las contraseñas nueva y de confirmación coincidan.
+       * 
+       * Se ejecuta en el evento onsubmit del formulario. Si las contraseñas
+       * no coinciden, muestra un mensaje de error y previene el envío.
+       * 
+       * @returns {boolean} true si las contraseñas coinciden, false si no
+       */
+      function validatePassword() {
+        var newPassword = document.getElementById('new_password').value;
+        var confirmPassword = document.getElementById('confirm_password').value;
+        var errorMsg = document.getElementById('password-error');
+        
+        if (newPassword !== confirmPassword) {
+          errorMsg.style.display = 'block';
+          return false;
+        }
+        errorMsg.style.display = 'none';
+        return true;
+      }
+    </script>
   </body>
 </html>
