@@ -63,7 +63,7 @@
       <div class="admin-dropdown-menu" id="admin-menu" style="display: none;">
         <ul>
           <li><a href="#" onclick="toggleCreateUserForm(); closeAdminMenu(); return false;">➕ Crear usuario</a></li>
-          <li><a href="#" onclick="showUsersList(); closeAdminMenu(); return false;">👥 Ver usuarios</a></li>
+          <li><a href="/admin/users" onclick="closeAdminMenu();">👥 Ver usuarios</a></li>
           <li><a href="#" onclick="toggleCreateTaskForm(); closeAdminMenu(); return false;">📋 Crear tarea</a></li>
         </ul>
       </div>
@@ -243,7 +243,7 @@
 
       /**
        * Alterna la visibilidad del formulario de cambio de contraseña.
-       * Cierra el menú de administración si está abierto.
+       * Cierra todos los demás elementos (menú admin, formularios admin).
        * 
        * Muestra/oculta el formulario colapsable y limpia los campos
        * cuando se abre para evitar que queden valores anteriores.
@@ -253,6 +253,11 @@
       function togglePasswordForm() {
         // Cerrar menú de administración
         closeAdminMenu();
+        
+        // Cerrar todos los formularios administrativos
+        document.getElementById('create-user-form').style.display = 'none';
+        document.getElementById('create-task-form').style.display = 'none';
+        document.getElementById('users-list-container').style.display = 'none';
         
         var form = document.getElementById('password-form');
         var errorMsg = document.getElementById('password-error');
@@ -269,14 +274,21 @@
 
       /**
        * Alterna la visibilidad del formulario de crear usuario.
-       * Cierra otros formularios si están abiertos.
+       * Cierra todos los demás elementos (menú admin, password, otras formas).
        * 
        * @returns {void}
        */
       function toggleCreateUserForm() {
-        hideAllAdminForms();
+        // Cerrar menú admin y formulario de contraseña
+        closeAdminMenu();
+        document.getElementById('password-form').style.display = 'none';
+        
+        // Cerrar otros formularios admin
+        document.getElementById('create-task-form').style.display = 'none';
+        document.getElementById('users-list-container').style.display = 'none';
+        
         var form = document.getElementById('create-user-form');
-        if (form.style.display === 'none') {
+        if (form.style.display === 'none' || form.style.display === '') {
           form.style.display = 'block';
           document.getElementById('new_username').value = '';
         } else {
@@ -286,14 +298,21 @@
 
       /**
        * Alterna la visibilidad del formulario de crear tarea.
-       * Cierra otros formularios si están abiertos.
+       * Cierra todos los demás elementos (menú admin, password, otras formas).
        * 
        * @returns {void}
        */
       function toggleCreateTaskForm() {
-        hideAllAdminForms();
+        // Cerrar menú admin y formulario de contraseña
+        closeAdminMenu();
+        document.getElementById('password-form').style.display = 'none';
+        
+        // Cerrar otros formularios admin
+        document.getElementById('create-user-form').style.display = 'none';
+        document.getElementById('users-list-container').style.display = 'none';
+        
         var form = document.getElementById('create-task-form');
-        if (form.style.display === 'none') {
+        if (form.style.display === 'none' || form.style.display === '') {
           form.style.display = 'block';
         } else {
           form.style.display = 'none';

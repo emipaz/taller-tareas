@@ -1,0 +1,181 @@
+{# 
+  Plantilla: Lista de Usuarios (Admin)
+  
+  Descripción:
+    Muestra la lista completa de usuarios del sistema con paginación,
+    búsqueda y acciones administrativas.
+  
+  Variables de contexto:
+    - user (Usuario): Usuario administrador autenticado
+    - usuarios (List): Lista de usuarios
+    - pagination (dict): Información de paginación
+    - search (str): Término de búsqueda actual
+    - error (str, opcional): Mensaje de error
+#}
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gestión de Usuarios - Admin</title>
+    <link rel="stylesheet" href="/static/main.css" />
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+  </head>
+  <body>
+    {# Barra de navegación superior #}
+    <nav class="navbar">
+      <div class="navbar-container">
+        <div class="navbar-user">
+          <span class="user-name">{{ user.nombre }}</span>
+          <span class="user-role">({{ user.rol }})</span>
+        </div>
+        <div class="navbar-links">
+          <a href="/">⬅️ Volver al Dashboard</a>
+          <a href="/logout">Cerrar sesión</a>
+        </div>
+      </div>
+    </nav>
+
+    {# Mensajes de feedback #}
+    {% if error %}
+    <div class="error" style="background-color: #f8d7da; color: #721c24; padding: 10px; margin: 10px auto; max-width: 1200px; border-radius: 4px; border: 1px solid #f5c6cb;">
+      {{ error }}
+    </div>
+    {% endif %}
+
+    {# Contenido principal #}
+    <main style="max-width: 1200px; margin: 0 auto; padding: 0 24px;">
+      <h2 style="color: #4a7ba7; margin-bottom: 20px;">👥 Gestión de Usuarios</h2>
+
+      {# Barra de búsqueda #}
+      <div style="margin-bottom: 20px;">
+        <form method="get" action="/admin/users" style="display: flex; gap: 10px; align-items: center;">
+          <input 
+            type="text" 
+            name="search" 
+            placeholder="Buscar usuario..." 
+            value="{{ search }}"
+            style="flex: 1; padding: 10px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px;"
+          />
+          <button type="submit" style="padding: 10px 20px; background: #4a7ba7; color: #fff; border: none; border-radius: 4px; cursor: pointer;">
+            🔍 Buscar
+          </button>
+          {% if search %}
+          <a href="/admin/users" style="padding: 10px 20px; background: #666; color: #fff; text-decoration: none; border-radius: 4px; display: inline-block;">
+            ✖️ Limpiar
+          </a>
+          {% endif %}
+        </form>
+      </div>
+
+      {# Tabla de usuarios #}
+      <div style="background: #2a2929; border-radius: 8px; overflow: hidden; border: 1px solid #444;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #3a3939; border-bottom: 2px solid #4a7ba7;">
+              <th style="padding: 12px; text-align: left; color: #87ceeb; font-weight: 600;">👤 Usuario</th>
+              <th style="padding: 12px; text-align: left; color: #87ceeb; font-weight: 600;">🛡️ Rol</th>
+              <th style="padding: 12px; text-align: center; color: #87ceeb; font-weight: 600;">🔐 Contraseña</th>
+              <th style="padding: 12px; text-align: center; color: #87ceeb; font-weight: 600;">⚙️ Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if usuarios %}
+              {% for usuario in usuarios %}
+              <tr style="border-bottom: 1px solid #333;">
+                <td style="padding: 12px; color: #e0e0e0;">{{ usuario.nombre }}</td>
+                <td style="padding: 12px;">
+                  {% if usuario.rol == 'admin' %}
+                  <span style="background: #4a7ba7; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: 600;">ADMIN</span>
+                  {% else %}
+                  <span style="background: #666; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">USER</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                  {% if usuario.tiene_password %}
+                  <span style="color: #4caf50;">✅ Configurada</span>
+                  {% else %}
+                  <span style="color: #ff9800;">⚠️ Sin configurar</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                  <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button 
+                      style="padding: 6px 12px; background: #5a8bc7; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em;"
+                      onclick="resetPassword('{{ usuario.nombre }}')"
+                    >
+                      🔑 Resetear
+                    </button>
+                    {% if usuario.rol != 'admin' %}
+                    <button 
+                      style="padding: 6px 12px; background: #d32f2f; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em;"
+                      onclick="deleteUser('{{ usuario.nombre }}')"
+                    >
+                      🗑️ Eliminar
+                    </button>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="4" style="padding: 40px; text-align: center; color: #999;">
+                  {% if search %}
+                  No se encontraron usuarios con el término "{{ search }}"
+                  {% else %}
+                  No hay usuarios registrados
+                  {% endif %}
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      {# Paginación #}
+      {% if pagination and pagination.total_pages > 1 %}
+      <div style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 10px;">
+        {% if pagination.has_prev %}
+        <a href="/admin/users?page={{ pagination.prev_page }}{% if search %}&search={{ search }}{% endif %}" 
+           style="padding: 8px 16px; background: #4a7ba7; color: #fff; text-decoration: none; border-radius: 4px;">
+          ⬅️ Anterior
+        </a>
+        {% else %}
+        <span style="padding: 8px 16px; background: #333; color: #666; border-radius: 4px;">⬅️ Anterior</span>
+        {% endif %}
+
+        <span style="color: #ccc;">
+          Página {{ pagination.current_page }} de {{ pagination.total_pages }} 
+          ({{ pagination.total_items }} usuario{{ 's' if pagination.total_items != 1 else '' }})
+        </span>
+
+        {% if pagination.has_next %}
+        <a href="/admin/users?page={{ pagination.next_page }}{% if search %}&search={{ search }}{% endif %}" 
+           style="padding: 8px 16px; background: #4a7ba7; color: #fff; text-decoration: none; border-radius: 4px;">
+          Siguiente ➡️
+        </a>
+        {% else %}
+        <span style="padding: 8px 16px; background: #333; color: #666; border-radius: 4px;">Siguiente ➡️</span>
+        {% endif %}
+      </div>
+      {% endif %}
+    </main>
+
+    <script>
+      function resetPassword(username) {
+        if (confirm(`¿Estás seguro de resetear la contraseña del usuario "${username}"?`)) {
+          // TODO: Implementar endpoint de reset password
+          alert('Funcionalidad de resetear contraseña pendiente');
+        }
+      }
+
+      function deleteUser(username) {
+        if (confirm(`¿Estás seguro de ELIMINAR el usuario "${username}"? Esta acción no se puede deshacer.`)) {
+          // TODO: Implementar endpoint de eliminar usuario
+          alert('Funcionalidad de eliminar usuario pendiente');
+        }
+      }
+    </script>
+  </body>
+</html>
