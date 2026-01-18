@@ -1,13 +1,11 @@
-/**
- * Módulo común con funciones JavaScript compartidas entre vistas
+/** -Módulo común con funciones JavaScript compartidas entre vistas
  * 
  * Este archivo contiene utilidades reutilizables para todas las plantillas
  * del sistema de gestión de tareas.
  */
 
-/**
- * Alterna la visibilidad de un campo de contraseña entre texto plano y oculto.
- * 
+/** Alterna la visibilidad de un campo de contraseña entre texto plano y oculto.
+ *  
  * Cambia el tipo del input entre 'password' y 'text', y actualiza el icono
  * del ojo para indicar el estado actual (👁️ = oculto, 🙈 = visible).
  * 
@@ -30,8 +28,8 @@ function togglePasswordVisibility(inputId, icon) {
   }
 }
 
-/**
- * Valida que las contraseñas coincidan antes de enviar el formulario.
+/** Valida que las contraseñas coincidan antes de enviar el formulario.
+ * 
  * 
  * Compara los valores de los campos password/new_password y confirm_password.
  * Muestra un mensaje de error si no coinciden.
