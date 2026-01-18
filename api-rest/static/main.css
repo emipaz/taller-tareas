@@ -1,255 +1,844 @@
+/* ==========================================
+   ESTILOS GLOBALES DEL DOCUMENTO
+   ==========================================
+   Estos estilos se aplican a todo el documento HTML
+*/
+
 body {
+  /* font-family: Define la fuente principal del sitio. 
+     Se define una lista de respaldo (fallback): si Arial no está disponible, 
+     usa Helvetica, y si tampoco está, usa cualquier sans-serif del sistema */
   font-family: Arial, Helvetica, sans-serif;
+  
+  /* margin: 0 elimina el margen por defecto que los navegadores añaden al body.
+     Esto nos da control total sobre el espaciado */
   margin: 0;
+  
+  /* padding: 0 elimina el relleno interno por defecto del body */
   padding: 0;
+  
+  /* color: Define el color del texto. #f8f0f0 es un blanco ligeramente grisáceo
+     (los colores hexadecimales van de #000000 negro a #ffffff blanco) */
   color: #f8f0f0;
+  
+  /* background: Color de fondo. #201f1f es un gris muy oscuro, casi negro.
+     Esto crea una interfaz de tema oscuro (dark mode) */
   background: #201f1f;
 }
-h1 { margin: 0 0 12px 0; }
-h3 { margin-top: 0; color: #f8f0f0; }
+
+/* Estilos para encabezados H1 */
+h1 { 
+  /* margin: Define los márgenes en el orden: arriba, derecha, abajo, izquierda
+     0 0 12px 0 significa: sin margen arriba/derecha/izquierda, 12px abajo
+     Esto crea espacio después del título */
+  margin: 0 0 12px 0; 
+}
+
+/* Estilos para encabezados H3 */
+h3 { 
+  /* margin-top: 0 elimina el espacio arriba del h3 */
+  margin-top: 0; 
+  
+  /* color: Sobrescribe el color heredado del body si fuera necesario */
+  color: #f8f0f0; 
+}
+
+/* ==========================================
+   BARRA DE NAVEGACIÓN (NAVBAR)
+   ==========================================
+   La barra superior fija que contiene el logo, usuario y enlaces
+*/
 
 /* Navbar styles */
 .navbar {
+  /* background: Color de fondo de la barra. #2c2c2c es un gris oscuro,
+     ligeramente más claro que el fondo del body para crear contraste */
   background: #2c2c2c;
+  
+  /* padding: 16px 0 significa 16px arriba y abajo, 0 a los lados.
+     Esto crea espacio vertical dentro de la barra */
   padding: 16px 0;
+  
+  /* box-shadow: Crea una sombra debajo de la navbar para darle profundidad
+     Sintaxis: desplazamiento-x desplazamiento-y difuminado color
+     0 2px 4px = sin desplazamiento horizontal, 2px hacia abajo, 4px de difuminado
+     rgba(0,0,0,0.3) = negro con 30% de opacidad (transparencia) */
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  
+  /* margin-bottom: Espacio debajo de la navbar antes del contenido principal */
   margin-bottom: 24px;
 }
+
+/* Contenedor interno de la navbar - controla el ancho máximo y centrado */
 .navbar-container {
+  /* max-width: Ancho máximo de 1200px. En pantallas más grandes, 
+     no se expandirá más allá de este límite */
   max-width: 1200px;
+  
+  /* margin: 0 auto centra horizontalmente el contenedor.
+     0 = sin margen arriba/abajo, auto = calcula automáticamente márgenes izq/der */
   margin: 0 auto;
+  
+  /* padding: 0 24px = sin padding arriba/abajo, 24px a los lados.
+     Esto evita que el contenido toque los bordes en pantallas pequeñas */
   padding: 0 24px;
+  
+  /* display: flex activa Flexbox, un sistema de diseño moderno para alinear elementos.
+     Convierte este contenedor en un "flex container" */
   display: flex;
+  
+  /* justify-content: space-between distribuye los elementos hijos con espacio entre ellos.
+     El primer elemento va al inicio, el último al final, y el espacio se distribuye uniformemente */
   justify-content: space-between;
+  
+  /* align-items: center alinea verticalmente los elementos al centro.
+     Muy útil para alinear elementos de diferentes alturas */
   align-items: center;
 }
+
+/* Sección de información del usuario en la navbar */
 .navbar-user {
+  /* display: flex para alinear nombre y rol en una línea */
   display: flex;
+  
+  /* align-items: baseline alinea los elementos por su línea base de texto.
+     Esto hace que textos de diferentes tamaños se vean mejor alineados */
   align-items: baseline;
+  
+  /* gap: 8px crea un espacio de 8px entre los elementos hijos (nombre y rol).
+     Es más simple que usar margin en cada elemento */
   gap: 8px;
 }
+
+/* Nombre del usuario en la navbar */
 .user-name {
+  /* font-size: 1.5em = 1.5 veces el tamaño de fuente del elemento padre.
+     "em" es una unidad relativa que se ajusta proporcionalmente */
   font-size: 1.5em;
+  
+  /* font-weight: bold hace el texto en negrita */
   font-weight: bold;
+  
+  /* color: #4a7ba7 es un azul grisáceo, el color distintivo de la aplicación */
   color: #4a7ba7;
 }
+
+/* Rol del usuario (ej: "admin", "usuario") */
 .user-role {
+  /* font-size: 0.9em = 90% del tamaño normal, hace el rol más pequeño */
   font-size: 0.9em;
+  
+  /* color: #999 es un gris medio para texto secundario */
   color: #999;
 }
+
+/* Contenedor de enlaces de navegación */
 .navbar-links {
+  /* display: block hace que los enlaces se comporten como bloques.
+     Esto es el comportamiento por defecto de un div */
   display: block;
+  
+  /* gap: 20px crearía espacio entre enlaces si fuera flex o grid.
+     Aquí no tiene efecto porque display es block */
   gap: 20px;
+  
+  /* align-items: center (no tiene efecto con display: block) */
   align-items: center;
 }
+
+/* Enlaces individuales dentro de .navbar-links */
 .navbar-links > a {
+  /* El selector > significa "hijos directos solamente".
+     Esto aplica estilos solo a enlaces que son hijos inmediatos de .navbar-links */
+  
+  /* color: #87ceeb es "SkyBlue", un azul claro que contrasta bien con el fondo oscuro */
   color: #87ceeb;
+  
+  /* text-decoration: none elimina el subrayado por defecto de los enlaces */
   text-decoration: none;
+  
+  /* font-size: 1em = tamaño normal de fuente */
   font-size: 1em;
+  
+  /* transition: Crea una animación suave cuando cambia el color.
+     color = propiedad a animar, 0.2s = duración de 0.2 segundos */
   transition: color 0.2s;
 }
+
+/* Estado hover (cuando el ratón pasa sobre el enlace) */
 .navbar-links > a:hover {
+  /* :hover es un pseudo-selector que se activa al pasar el ratón */
+  
+  /* color: #b0e0ff es un azul más claro que #87ceeb, para feedback visual */
   color: #b0e0ff;
+  
+  /* text-decoration: underline añade subrayado al hacer hover */
   text-decoration: underline;
 }
 
+/* ==========================================
+   MENÚ DESPLEGABLE DE ADMINISTRACIÓN
+   ==========================================
+   Un menú sofisticado con efectos visuales para opciones de admin
+*/
+
 /* Admin dropdown styles - v2 */
+
+/* Enlace deshabilitado (para opciones no disponibles) */
 .disabled-link {
+  /* !important fuerza que esta regla tenga prioridad sobre otras.
+     Úsalo con precaución, solo cuando realmente necesites sobrescribir estilos */
   color: #666 !important;
+  
+  /* cursor: not-allowed cambia el cursor a "prohibido" (círculo con línea) */
   cursor: not-allowed !important;
+  
+  /* opacity: 0.5 hace el elemento semi-transparente (50% opacidad).
+     0 = invisible, 1 = completamente opaco */
   opacity: 0.5;
+  
+  /* pointer-events: none desactiva todos los eventos del mouse.
+     El elemento no puede recibir clicks ni hovers */
   pointer-events: none;
 }
+
+/* Contenedor del menú desplegable */
 .admin-dropdown-menu {
+  /* position: absolute saca el elemento del flujo normal del documento.
+     Se posiciona relativo al ancestro posicionado más cercano */
   position: absolute;
+  
+  /* top: 65px posiciona el menú 65px desde arriba de su contenedor */
   top: 65px;
+  
+  /* right: 250px posiciona el menú 250px desde el borde derecho */
   right: 250px;
+  
+  /* background: Color de fondo del menú, casi negro */
   background: #1a1a1a;
+  
+  /* box-shadow: Sombra grande para darle profundidad al menú flotante
+     0 = sin desplazamiento horizontal
+     10px = desplazamiento hacia abajo
+     25px = gran difuminado para sombra suave
+     rgba(0,0,0,0.6) = negro con 60% opacidad */
   box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+  
+  /* border-radius: 15px redondea las esquinas del menú.
+     Valores más altos = esquinas más redondeadas */
   border-radius: 15px;
+  
+  /* border: Borde sólido de 2px en el color azul de la app */
   border: 2px solid #4a7ba7;
+  
+  /* z-index: 1000 controla la superposición vertical de elementos.
+     Números más altos aparecen encima. 1000 asegura que el menú
+     aparezca sobre casi todo lo demás */
   z-index: 1000;
+  
+  /* padding: Espacio interno del menú */
   padding: 16px;
+  
+  /* min-width: Ancho mínimo del menú. Puede crecer, pero nunca ser más pequeño */
   min-width: 500px;
 }
+
+/* Lista <ul> dentro del menú desplegable */
 .admin-dropdown-menu ul {
+  /* list-style: none elimina las viñetas/bullets de la lista */
   list-style: none !important;
+  
+  /* margin: 0 elimina márgenes por defecto de la lista */
   margin: 0 !important;
+  
+  /* padding: 0 elimina padding por defecto de la lista */
   padding: 0 !important;
+  
+  /* display: flex activa Flexbox para organizar los items horizontalmente */
   display: flex !important;
+  
+  /* gap: 12px crea espacio entre cada item de la lista */
   gap: 12px;
+  
+  /* flex-wrap: nowrap previene que los items se envuelvan a una nueva línea.
+     Todos permanecen en una sola fila */
   flex-wrap: nowrap;
+  
+  /* justify-content: center centra horizontalmente todos los items */
   justify-content: center;
 }
+
+/* Items individuales <li> dentro del menú */
 .admin-dropdown-menu li {
+  /* display: inline-block hace que los items se comporten como elementos en línea
+     pero permite definir width y height */
   display: inline-block !important;
+  
+  /* margin: 0 elimina márgenes */
   margin: 0 !important;
+  
+  /* padding: 0 elimina padding */
   padding: 0 !important;
+  
+  /* flex: 0 0 auto en Flexbox significa:
+     0 = no crecer (flex-grow)
+     0 = no encoger (flex-shrink)
+     auto = tamaño basado en contenido (flex-basis) */
   flex: 0 0 auto;
 }
+
+/* Enlaces <a> dentro del menú - LOS BOTONES DEL MENÚ */
 .admin-dropdown-menu a {
+  /* Esta es la parte más compleja - estos enlaces parecen botones con gradientes */
+  
   display: inline-block !important;
+  
+  /* padding: 12px 24px = 12px arriba/abajo, 24px izquierda/derecha
+     Esto hace los botones grandes y fáciles de clickear */
   padding: 12px 24px !important;
+  
+  /* color: blanco puro para el texto */
   color: #ffffff !important;
+  
   text-decoration: none !important;
+  
+  /* font-size: Tamaño de fuente ligeramente reducido */
   font-size: 0.95em !important;
+  
+  /* font-weight: 600 = semi-negrita (entre normal=400 y bold=700) */
   font-weight: 600 !important;
+  
+  /* transition: Anima TODAS las propiedades que cambien
+     all = todas las propiedades
+     0.3s = duración de 0.3 segundos
+     cubic-bezier = función de timing personalizada para animación suave */
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  
+  /* white-space: nowrap previene que el texto se divida en múltiples líneas */
   white-space: nowrap !important;
+  
   border-radius: 10px !important;
+  
+  /* background: linear-gradient crea un degradado de color
+     135deg = ángulo diagonal del gradiente (de esquina inferior izq a superior der)
+     #5a8bc7 0% = color inicial (azul claro)
+     #4a7ba7 100% = color final (azul oscuro)
+     Esto crea un efecto 3D sutil */
   background: linear-gradient(135deg, #5a8bc7 0%, #4a7ba7 100%) !important;
+  
+  /* box-shadow: Sombra del botón
+     0 4px = sombra 4px hacia abajo
+     8px = difuminado de 8px
+     rgba(74, 123, 167, 0.3) = color azul semi-transparente */
   box-shadow: 0 4px 8px rgba(74, 123, 167, 0.3) !important;
+  
+  /* border: Borde blanco semi-transparente que rodea el botón */
   border: 2px solid rgba(255,255,255,0.2) !important;
+  
+  /* position: relative permite que elementos hijos usen position: absolute
+     relativo a este botón */
   position: relative !important;
+  
+  /* overflow: visible permite que contenido (como sombras) salga del botón */
   overflow: visible !important;
+  
+  /* cursor: pointer cambia el cursor a una manita al pasar sobre el botón */
   cursor: pointer !important;
 }
+
+/* Estado hover de los botones - cuando pasas el ratón sobre ellos */
 .admin-dropdown-menu a:hover {
+  /* Gradiente más claro para el efecto hover */
   background: linear-gradient(135deg, #6a9bd7 0%, #5a8bc7 100%) !important;
+  
+  /* transform: Transforma visualmente el elemento
+     translateY(-3px) = mueve 3px hacia arriba
+     scale(1.05) = aumenta tamaño 5% 
+     Esto crea un efecto de "levantamiento" */
   transform: translateY(-3px) scale(1.05) !important;
+  
+  /* Sombra más grande y notoria en hover */
   box-shadow: 0 8px 16px rgba(74, 123, 167, 0.5) !important;
+  
   color: #ffffff !important;
+  
+  /* Borde más visible en hover */
   border-color: rgba(255,255,255,0.4) !important;
 }
+
+/* Estado active - cuando haces click en el botón */
 .admin-dropdown-menu a:active {
+  /* transform menos pronunciado que hover, simula "presionar" el botón
+     translateY(-1px) = solo 1px arriba
+     scale(1.02) = solo 2% más grande */
   transform: translateY(-1px) scale(1.02) !important;
+  
+  /* Sombra más pequeña en active, como si el botón estuviera más cerca */
   box-shadow: 0 4px 8px rgba(74, 123, 167, 0.4) !important;
 }
 
+/* ==========================================
+   CONTENIDO PRINCIPAL Y TAREAS
+   ==========================================
+   Estilos para el área de contenido principal y lista de tareas
+*/
+
 /* Main content */
 main {
+  /* max-width: Limita el ancho del contenido para mejor legibilidad */
   max-width: 1200px;
+  
+  /* margin: 0 auto centra el contenedor horizontalmente */
   margin: 0 auto;
+  
+  /* padding: 0 24px añade espacio a los lados para que el contenido
+     no toque los bordes en pantallas pequeñas */
   padding: 0 24px;
 }
 
-.controls { margin-bottom: 12px; }
-.tareas-fragment ul { list-style: none; padding: 0; }
+/* Sección de controles (botones, filtros, etc) */
+.controls { 
+  /* margin-bottom: Espacio debajo de los controles antes de la lista de tareas */
+  margin-bottom: 12px; 
+}
+
+/* Lista de tareas dentro del fragmento */
+.tareas-fragment ul { 
+  /* list-style: none elimina las viñetas de la lista */
+  list-style: none; 
+  
+  /* padding: 0 elimina el padding por defecto de las listas */
+  padding: 0; 
+}
+
+/* Cada item individual de tarea */
 .tarea-item { 
+  /* padding: 8px crea espacio interno en todos los lados del item */
   padding: 8px; 
+  
+  /* border: Borde gris claro de 1px alrededor del item */
   border: 1px solid #ddd; 
+  
+  /* border-radius: 6px redondea ligeramente las esquinas */
   border-radius: 6px; 
+  
+  /* margin-bottom: Espacio entre items de tarea */
   margin-bottom: 8px; 
+  
+  /* background: Fondo gris oscuro para cada tarea, contrasta con el fondo del body */
   background: #2a2929;
 }
-.tarea-item .desc { color: #ccc; margin-top: 6px; }
-.tarea-item .meta { color: #999; font-size: 0.9em; margin-top: 6px; }
+
+/* Descripción dentro de cada tarea */
+.tarea-item .desc { 
+  /* El selector .tarea-item .desc significa "elementos con clase 'desc' 
+     que están dentro de elementos con clase 'tarea-item'" */
+  
+  /* color: #ccc es un gris claro para texto secundario */
+  color: #ccc; 
+  
+  /* margin-top: Espacio arriba de la descripción */
+  margin-top: 6px; 
+}
+
+/* Metadatos de la tarea (fecha, usuario, etc) */
+.tarea-item .meta { 
+  /* color: Gris más oscuro para información menos importante */
+  color: #999; 
+  
+  /* font-size: 0.9em = 90% del tamaño normal, hace el texto más pequeño */
+  font-size: 0.9em; 
+  
+  /* margin-top: Espacio arriba de los metadatos */
+  margin-top: 6px; 
+}
+
+/* ==========================================
+   PÁGINA DE INICIO (LANDING) Y FORMULARIOS
+   ==========================================
+   Estilos para la página de bienvenida y formularios de login
+*/
 
 /* Landing and forms */
-.landing { max-width: 520px; margin: 24px auto; }
-.landing .hero { margin-bottom: 16px; }
-.login label { display: block; margin-bottom: 8px; }
+
+/* Contenedor de la página de inicio/login */
+.landing { 
+  /* max-width: Ancho máximo más pequeño para formularios (más legible) */
+  max-width: 520px; 
+  
+  /* margin: 24px auto 
+     24px = margen arriba y abajo
+     auto = centra horizontalmente */
+  margin: 24px auto; 
+}
+
+/* Sección hero (encabezado principal) de la landing */
+.landing .hero { 
+  /* margin-bottom: Espacio debajo del hero antes del formulario */
+  margin-bottom: 16px; 
+}
+
+/* Labels (etiquetas) en formularios de login */
+.login label { 
+  /* display: block hace que cada label ocupe toda una línea,
+     forzando que el input vaya en la línea siguiente */
+  display: block; 
+  
+  /* margin-bottom: Espacio entre el label y el input */
+  margin-bottom: 8px; 
+}
+
+/* ==========================================
+   INPUT DE CONTRASEÑA CON ICONO DE OJO
+   ==========================================
+   Sistema para mostrar/ocultar contraseña con un icono clickeable
+   Técnica avanzada: posicionamiento absoluto dentro de relativo
+*/
 
 /* Password input wrapper with eye icon */
+
+/* Contenedor wrapper que envuelve el input de contraseña y el icono */
 .password-input-wrapper {
+  /* position: relative crea un "contexto de posicionamiento".
+     Los elementos position: absolute dentro de este se posicionarán
+     relativos a este wrapper, no a toda la página */
   position: relative;
+  
+  /* display: inline-block permite que el wrapper se comporte como bloque
+     pero mantenga el ancho de su contenido */
   display: inline-block;
+  
+  /* width: 100% hace que el wrapper ocupe todo el ancho disponible */
   width: 100%;
 }
+
+/* Input de contraseña dentro del wrapper */
 .password-input-wrapper input {
+  /* width: 100% hace que el input ocupe todo el wrapper */
   width: 100%;
+  
+  /* padding-right: 40px añade espacio a la derecha del input
+     para que el texto no se solape con el icono del ojo.
+     Es más grande que el padding normal para hacer espacio al icono */
   padding-right: 40px;
 }
+
+/* Icono de ojo para mostrar/ocultar contraseña */
 .toggle-password {
+  /* position: absolute saca el icono del flujo normal.
+     Se posiciona relativo al .password-input-wrapper (que es position: relative) */
   position: absolute;
+  
+  /* right: 10px posiciona el icono 10px desde el borde derecho del wrapper */
   right: 10px;
+  
+  /* top: 50% posiciona el icono al 50% de la altura del wrapper */
   top: 50%;
+  
+  /* transform: translateY(-50%) mueve el icono hacia arriba 50% de su propia altura.
+     TÉCNICA CLAVE: combinado con top: 50%, esto centra perfectamente el icono
+     verticalmente, sin importar su tamaño.
+     Funciona porque:
+     1. top: 50% lo pone a mitad del contenedor
+     2. translateY(-50%) lo ajusta hacia arriba por su propia mitad
+     Resultado: centrado perfecto vertical */
   transform: translateY(-50%);
+  
+  /* cursor: pointer muestra la manita al pasar el ratón, 
+     indicando que es clickeable */
   cursor: pointer;
+  
+  /* font-size: Tamaño del icono */
   font-size: 1.2em;
+  
+  /* user-select: none previene que el usuario seleccione el texto del icono
+     (los emojis son técnicamente texto) */
   user-select: none;
+  
+  /* opacity: 0.7 hace el icono semi-transparente cuando no interactúas con él */
   opacity: 0.7;
+  
+  /* transition: Anima suavemente el cambio de opacidad */
   transition: opacity 0.2s;
 }
+
+/* Estado hover del icono */
 .toggle-password:hover {
+  /* opacity: 1 hace el icono completamente opaco en hover,
+     dando feedback visual de que está listo para clickear */
   opacity: 1;
 }
 
+/* ==========================================
+   INPUTS Y BOTONES GLOBALES
+   ==========================================
+   Estilos base para todos los campos de entrada y botones
+*/
+
+/* Estilos para todos los inputs de texto */
 input { 
+  /* padding: 8px crea espacio interno para que el texto no toque los bordes */
   padding: 8px; 
+  
+  /* width: 100% hace que el input ocupe todo el ancho de su contenedor */
   width: 100%; 
+  
+  /* box-sizing: border-box es CRUCIAL para layouts predecibles.
+     Normalmente, width no incluye padding ni border, causando que elementos
+     sean más anchos de lo esperado. border-box incluye padding y border
+     en el width, haciendo que un input de width: 100% realmente ocupe 100% */
   box-sizing: border-box;
+  
+  /* border: Borde sólido de 1px en gris oscuro */
   border: 1px solid #555;
+  
+  /* border-radius: Esquinas ligeramente redondeadas */
   border-radius: 4px;
+  
+  /* background: Fondo oscuro para tema dark */
   background: #333;
+  
+  /* color: Texto blanco en el input */
   color: #fff;
 }
+
+/* Estilos para todos los botones */
 button { 
+  /* padding: 8px 12px 
+     8px arriba/abajo, 12px izquierda/derecha */
   padding: 8px 12px;
+  
+  /* background: Color azul característico de la app */
   background: #4a7ba7;
+  
+  /* color: Texto blanco en el botón */
   color: #fff;
+  
+  /* border: none elimina el borde por defecto de los botones */
   border: none;
+  
+  /* border-radius: Esquinas redondeadas */
   border-radius: 4px;
+  
+  /* cursor: pointer muestra manita al pasar el ratón,
+     haciendo obvio que es clickeable */
   cursor: pointer;
 }
+
+/* Estado hover de los botones */
 button:hover {
+  /* background: Azul más oscuro en hover para feedback visual.
+     El usuario sabe que su ratón está sobre el botón */
   background: #3a6b97;
 }
+/* ==========================================
+   MENSAJES DE ESTADO (ERROR Y ÉXITO)
+   ==========================================
+   Alertas visuales para comunicar resultados al usuario
+   Usa colores estándar de la web: rojo=error, verde=éxito
+*/
+
+/* Mensaje de error */
 .error { 
+  /* color: Rojo oscuro para el texto del error */
   color: #721c24; 
+  
+  /* background: Rosa claro como fondo, suficiente contraste para leer */
   background: #f8d7da; 
+  
+  /* padding: Espacio interno para que el texto no toque los bordes */
   padding: 10px; 
+  
+  /* border-radius: Esquinas redondeadas */
   border-radius: 4px; 
+  
+  /* margin-bottom: Espacio debajo del mensaje de error */
   margin-bottom: 10px;
+  
+  /* border: Borde rojo más oscuro que el fondo, define mejor el área */
   border: 1px solid #f5c6cb;
 }
+
+/* Mensaje de éxito */
 .success {
+  /* color: Verde oscuro para el texto */
   color: #155724;
+  
+  /* background: Verde claro como fondo */
   background: #d4edda;
+  
+  /* padding: Espacio interno */
   padding: 10px;
+  
+  /* border-radius: Esquinas redondeadas */
   border-radius: 4px;
+  
+  /* margin-bottom: Espacio debajo del mensaje */
   margin-bottom: 10px;
+  
+  /* border: Borde verde más oscuro */
   border: 1px solid #c3e6cb;
 }
+
+/* NOTA SOBRE COLORES DE MENSAJES:
+   Estos colores siguen las guías de accesibilidad WCAG para asegurar
+   que personas con daltonismo o problemas visuales puedan distinguir
+   los mensajes. El contraste entre texto y fondo es suficientemente alto.
+*/
+/* ==========================================
+   METADATOS DE USUARIO
+   ==========================================
+   Información secundaria sobre usuarios (fecha, enlaces, etc)
+*/
+
+/* Contenedor de metadatos de usuario */
 .user-meta { 
+  /* font-size: 0.9em hace el texto un poco más pequeño que el normal,
+     indicando que es información secundaria */
   font-size: 0.9em; 
+  
+  /* color: #bbb es un gris claro para texto menos importante */
   color: #bbb; 
 }
+
+/* Enlaces dentro de los metadatos de usuario */
 .user-meta a {
+  /* color: Azul característico de la app para los enlaces */
   color: #4a7ba7;
+  
+  /* text-decoration: none quita el subrayado por defecto */
   text-decoration: none;
 }
+
+/* Estado hover de los enlaces en metadatos */
 .user-meta a:hover {
+  /* text-decoration: underline añade subrayado en hover
+     para indicar que es clickeable */
   text-decoration: underline;
 }
 
+/* ==========================================
+   FORMULARIOS CENTRADOS (CAMBIO DE CONTRASEÑA)
+   ==========================================
+   Formularios con diseño de tarjeta centrada para acciones importantes
+   Técnica: contenedor con max-width y margin auto para centrado
+*/
+
 /* Password form styles */
+
+/* Contenedor principal del formulario centrado */
 .centered-form {
+  /* max-width: Limita el ancho para mejor legibilidad */
   max-width: 520px;
+  
+  /* margin: 24px auto
+     24px arriba y abajo para separación
+     auto izquierda/derecha para centrar horizontalmente */
   margin: 24px auto;
+  
+  /* background: Fondo gris oscuro, contrasta con el fondo del body
+     creando efecto de "tarjeta flotante" */
   background: #2a2929;
+  
+  /* padding: Espacio interno generoso para que el contenido respire */
   padding: 24px;
+  
+  /* border-radius: Esquinas redondeadas para suavizar el diseño */
   border-radius: 8px;
+  
+  /* border: Borde sutil que define la tarjeta */
   border: 1px solid #444;
 }
+
+/* Encabezado H3 dentro del formulario centrado */
 .centered-form h3 {
+  /* color: Texto claro para contraste con el fondo oscuro */
   color: #f8f0f0;
+  
+  /* margin-top: 0 elimina el margen superior para que el título
+     esté alineado con el padding del contenedor */
   margin-top: 0;
+  
+  /* margin-bottom: Espacio debajo del título antes de los campos */
   margin-bottom: 20px;
+  
+  /* text-align: center centra el texto del título.
+     Importante: esto solo centra el TEXTO, no el elemento completo */
   text-align: center;
 }
+
+/* Labels dentro del formulario centrado */
 .centered-form label {
+  /* color: Gris claro para las etiquetas */
   color: #ccc;
+  
+  /* display: block hace que cada label ocupe su propia línea completa,
+     empujando el input a la línea siguiente */
   display: block;
+  
+  /* margin-bottom: Pequeño espacio entre el label y su input */
   margin-bottom: 8px;
 }
+
+/* Inputs dentro del formulario centrado */
 .centered-form input {
+  /* width: 100% hace que el input ocupe todo el ancho disponible */
   width: 100%;
+  
+  /* box-sizing: border-box asegura que el padding y border
+     se incluyan en el width del 100%, evitando desbordamiento */
   box-sizing: border-box;
 }
+
+/* Divs dentro del formulario (típicamente wrappers de campos) */
 .centered-form div {
+  /* margin-bottom: Espacio entre cada grupo campo-label */
   margin-bottom: 10px;
 }
+
+/* Botones dentro del formulario centrado */
 .centered-form button {
+  /* padding: Botones más grandes para mejor usabilidad */
   padding: 8px 16px;
 }
+
+/* Botones secundarios (tipo "button", no "submit") */
 .centered-form button[type="button"] {
+  /* Selector de atributo: [type="button"] selecciona solo botones
+     con type="button" (no los type="submit").
+     Esto permite estilizar botones de cancelar/volver diferente a enviar */
+  
+  /* background: Gris para botones secundarios/cancelar */
   background: #666;
+  
+  /* margin-left: Separa este botón del botón principal (submit)
+     asumiendo que están uno al lado del otro */
   margin-left: 10px;
 }
+
+/* Hover de botones secundarios */
 .centered-form button[type="button"]:hover {
+  /* background: Gris más oscuro en hover */
   background: #555;
 }
+
+/* CONCEPTOS CSS CLAVE USADOS EN ESTE FORMULARIO:
+   
+   1. BOX MODEL: 
+      Cada elemento es una caja con content, padding, border, margin
+      box-sizing: border-box hace que width incluya padding y border
+   
+   2. CENTRADO:
+      max-width + margin: auto centra horizontalmente
+      text-align: center centra el texto dentro de su contenedor
+   
+   3. SELECTORES DE ATRIBUTO:
+      [type="button"] permite seleccionar por atributo HTML
+   
+   4. CASCADA Y ESPECIFICIDAD:
+      .centered-form button es más específico que solo button,
+      por lo que sobrescribe los estilos globales de button
+*/
 
 
 
