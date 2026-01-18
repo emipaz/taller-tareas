@@ -238,8 +238,9 @@ async def login(request: Request, username: str = Form(...), password: str = For
 
     Envía las credenciales al endpoint interno `/auth/login`. Si el login
     es exitoso guarda `access_token` y `refresh_token` (si existe) en
-    cookies HTTP-only y redirige al dashboard. En caso de error renderiza
-    la plantilla de login con el mensaje apropiado.
+    cookies HTTP-only y redirige al dashboard usando código 303 (See Other)
+    que fuerza una petición GET al destino, evitando reenvío del formulario.
+    En caso de error renderiza la plantilla de login con el mensaje apropiado.
 
     Args:
         request (Request): Petición entrante.
@@ -248,7 +249,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
 
     Returns:
         TemplateResponse | RedirectResponse: Respuesta que renderiza una
-            plantilla o redirige al dashboard.
+            plantilla o redirige al dashboard con código 303.
     """
     # Usar el endpoint interno /auth/login vía TestClient del mismo app
     client = TestClient(request.app)
@@ -256,29 +257,42 @@ async def login(request: Request, username: str = Form(...), password: str = For
         "/auth/login",
         json={"nombre": username, "contraseña": password}
     )
-    logger.debug("web: /auth/login resp status=%s body=%s", resp_api.status_code, resp_api.text[:200])
-
+    logger.debug(f"web: /auth/login resp status={resp_api.status_code} body={resp_api.text[:200]}")
+    
+    # manejar respuestas
+    
+    # caso de credenciales inválidas
     if resp_api.status_code == 401:
         resp_json = resp_api.json()
         # Buscar el mensaje en 'detail' o 'message' (depende del formato de respuesta)
         detail = resp_json.get("detail", "") or resp_json.get("message", "")
+        # si el error indica que el usuario no tiene contraseña, redirigir a set-password
         if "sin contraseña" in detail or "sin_password" in detail:
             return templates.TemplateResponse("set_password.html", {"request": request, "username": username})
-        return templates.TemplateResponse("index.html", {"request": request, "error": "Credenciales inválidas"})
+        # otro tipo de error de credenciales
+        else:
+            return templates.TemplateResponse("index.html", {"request": request, "error": "Credenciales inválidas"})
 
+    # otros errores
     if resp_api.status_code != 200:
         return templates.TemplateResponse("index.html", {"request": request, "error": "Error de autenticación"})
-
+    
+    # caso de éxito: obtener tokens y setear cookies
     tokens = resp_api.json()
     access = tokens.get("access_token")
     refresh = tokens.get("refresh_token")
+    # asegurar que hay access token
     if not access:
         return templates.TemplateResponse("index.html", {"request": request, "error": "No se obtuvo token"})
-
+    
+    # redirigir al dashboard con cookies
     resp = RedirectResponse(url='/', status_code=303)
     resp.set_cookie("access_token", access, httponly=True)
+    
+    # setear refresh token si existe
     if refresh:
         resp.set_cookie("refresh_token", refresh, httponly=True)
+    
     return resp
 
 
@@ -306,7 +320,7 @@ async def set_password(request: Request, username: str = Form(...), password: st
         "/auth/set-password",
         json={"nombre": username, "contraseña": password}
     )
-    logger.debug("web: /auth/set-password status=%s body=%s", resp_api.status_code, resp_api.text[:200])
+    logger.debug(f"web: /auth/set-password status={resp_api.status_code} body={resp_api.text[:200]}")
     if resp_api.status_code != 200:
         detail = resp_api.json().get("detail") if resp_api.content else ""
         return templates.TemplateResponse("set_password.html", {"request": request, "username": username, "error": detail or "No se pudo establecer la contraseña"})

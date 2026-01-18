@@ -50,10 +50,24 @@
         </div>
         {# Enlaces de acción #}
         <div class="navbar-links">
+          <a href="#" id="admin-trigger" class="{% if user.rol != 'admin' %}disabled-link{% endif %}" onclick="{% if user.rol == 'admin' %}toggleAdminMenu(event); return false;{% else %}return false;{% endif %}">
+            Administración {% if user.rol == 'admin' %}{% endif %}
+          </a>
           <a href="#" onclick="togglePasswordForm(); return false;">Cambiar contraseña</a>
           <a href="/logout">Cerrar sesión</a>
         </div>
       </div>
+      
+      {# Menú desplegable de administración (fuera del navbar-links) #}
+      {% if user.rol == "admin" %}
+      <div class="admin-dropdown-menu" id="admin-menu" style="display: none;">
+        <ul>
+          <li><a href="#" onclick="toggleCreateUserForm(); closeAdminMenu(); return false;">➕ Crear usuario</a></li>
+          <li><a href="#" onclick="showUsersList(); closeAdminMenu(); return false;">👥 Ver usuarios</a></li>
+          <li><a href="#" onclick="toggleCreateTaskForm(); closeAdminMenu(); return false;">📋 Crear tarea</a></li>
+        </ul>
+      </div>
+      {% endif %}
     </nav>
 
     {# Mensajes de feedback al usuario #}
@@ -111,6 +125,74 @@
       </form>
     </div>
 
+    {# Formulario para crear usuario (solo admin, oculto por defecto) #}
+    {% if user.rol == "admin" %}
+    <div id="create-user-form" style="display: none;" class="centered-form">
+      <h3>➕ Crear Usuario</h3>
+      <form method="post" action="/admin/create-user">
+        <div style="margin-bottom: 10px;">
+          <label>Nombre de usuario:<br>
+            <input id="new_username" name="username" type="text" required>
+          </label>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <label>Tipo de usuario:<br>
+            <select name="role" style="width: 100%; padding: 8px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px;">
+              <option value="user">Usuario estándar</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </label>
+        </div>
+        <div id="admin-password-fields" style="display: none;">
+          <div style="margin-bottom: 10px;">
+            <label>Contraseña (solo para admin):<br>
+              <div class="password-input-wrapper">
+                <input id="admin_password" name="password" type="password">
+                <span class="toggle-password" onclick="togglePasswordVisibility('admin_password', this)">👁️</span>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div>
+          <button type="submit">Crear</button>
+          <button type="button" onclick="toggleCreateUserForm()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+
+    {# Formulario para crear tarea (solo admin, oculto por defecto) #}
+    <div id="create-task-form" style="display: none;" class="centered-form">
+      <h3>📋 Crear Tarea</h3>
+      <form method="post" action="/admin/create-task">
+        <div style="margin-bottom: 10px;">
+          <label>Nombre de la tarea:<br>
+            <input name="nombre" type="text" required>
+          </label>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <label>Descripción:<br>
+            <textarea name="descripcion" rows="4" style="width: 100%; padding: 8px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px;" required></textarea>
+          </label>
+        </div>
+        <div>
+          <button type="submit">Crear</button>
+          <button type="button" onclick="toggleCreateTaskForm()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+
+    {# Contenedor para lista de usuarios (solo admin, oculto por defecto) #}
+    <div id="users-list-container" style="display: none;">
+      <div class="centered-form">
+        <h3>👥 Usuarios del Sistema</h3>
+        <div id="users-list" hx-get="/usuarios" hx-trigger="load" hx-swap="innerHTML">
+          Cargando usuarios...
+        </div>
+        <button type="button" onclick="hideUsersList()" style="margin-top: 10px;">Cerrar</button>
+      </div>
+    </div>
+    {% endif %}
+
     {# Contenido principal: lista de tareas #}
     <main>
       <div class="controls">
@@ -127,7 +209,41 @@
     {# Scripts locales para funcionalidad del dashboard #}
     <script>
       /**
+       * Alterna la visibilidad del menú desplegable de administración.
+       * Cierra el formulario de contraseña si está abierto.
+       * 
+       * @param {Event} event - Evento del click
+       * @returns {boolean}
+       */
+      function toggleAdminMenu(event) {
+        event.preventDefault();
+        // Cerrar formulario de contraseña
+        document.getElementById('password-form').style.display = 'none';
+        
+        var menu = document.getElementById('admin-menu');
+        if (menu.style.display === 'none' || menu.style.display === '') {
+          menu.style.display = 'block';
+        } else {
+          menu.style.display = 'none';
+        }
+        return false;
+      }
+
+      /**
+       * Cierra el menú desplegable de administración.
+       * 
+       * @returns {void}
+       */
+      function closeAdminMenu() {
+        var menu = document.getElementById('admin-menu');
+        if (menu) {
+          menu.style.display = 'none';
+        }
+      }
+
+      /**
        * Alterna la visibilidad del formulario de cambio de contraseña.
+       * Cierra el menú de administración si está abierto.
        * 
        * Muestra/oculta el formulario colapsable y limpia los campos
        * cuando se abre para evitar que queden valores anteriores.
@@ -135,9 +251,12 @@
        * @returns {void}
        */
       function togglePasswordForm() {
+        // Cerrar menú de administración
+        closeAdminMenu();
+        
         var form = document.getElementById('password-form');
         var errorMsg = document.getElementById('password-error');
-        if (form.style.display === 'none') {
+        if (form.style.display === 'none' || form.style.display === '') {
           form.style.display = 'block';
           // Limpiar campos al abrir
           document.getElementById('new_password').value = '';
@@ -147,6 +266,101 @@
           form.style.display = 'none';
         }
       }
+
+      /**
+       * Alterna la visibilidad del formulario de crear usuario.
+       * Cierra otros formularios si están abiertos.
+       * 
+       * @returns {void}
+       */
+      function toggleCreateUserForm() {
+        hideAllAdminForms();
+        var form = document.getElementById('create-user-form');
+        if (form.style.display === 'none') {
+          form.style.display = 'block';
+          document.getElementById('new_username').value = '';
+        } else {
+          form.style.display = 'none';
+        }
+      }
+
+      /**
+       * Alterna la visibilidad del formulario de crear tarea.
+       * Cierra otros formularios si están abiertos.
+       * 
+       * @returns {void}
+       */
+      function toggleCreateTaskForm() {
+        hideAllAdminForms();
+        var form = document.getElementById('create-task-form');
+        if (form.style.display === 'none') {
+          form.style.display = 'block';
+        } else {
+          form.style.display = 'none';
+        }
+      }
+
+      /**
+       * Muestra la lista de usuarios.
+       * Cierra otros formularios si están abiertos.
+       * 
+       * @returns {void}
+       */
+      function showUsersList() {
+        hideAllAdminForms();
+        var container = document.getElementById('users-list-container');
+        container.style.display = 'block';
+        // HTMX cargará los usuarios automáticamente
+      }
+
+      /**
+       * Oculta la lista de usuarios.
+       * 
+       * @returns {void}
+       */
+      function hideUsersList() {
+        document.getElementById('users-list-container').style.display = 'none';
+      }
+
+      /**
+       * Oculta todos los formularios administrativos.
+       * Útil para asegurar que solo uno esté visible a la vez.
+       * 
+       * @returns {void}
+       */
+      function hideAllAdminForms() {
+        document.getElementById('create-user-form').style.display = 'none';
+        document.getElementById('create-task-form').style.display = 'none';
+        document.getElementById('users-list-container').style.display = 'none';
+      }
+
+      // Escuchar cambios en el select de tipo de usuario para mostrar campo de contraseña si es admin
+      document.addEventListener('DOMContentLoaded', function() {
+        // Cerrar menú desplegable al hacer click fuera de él
+        document.addEventListener('click', function(event) {
+          var dropdown = document.querySelector('.dropdown');
+          var menu = document.getElementById('admin-menu');
+          if (dropdown && menu && !dropdown.contains(event.target)) {
+            menu.style.display = 'none';
+          }
+        });
+
+        var roleSelect = document.querySelector('select[name="role"]');
+        if (roleSelect) {
+          roleSelect.addEventListener('change', function() {
+            var passwordFields = document.getElementById('admin-password-fields');
+            var passwordInput = document.getElementById('admin_password');
+            if (this.value === 'admin') {
+              passwordFields.style.display = 'block';
+              passwordInput.required = true;
+            } else {
+              passwordFields.style.display = 'none';
+              passwordInput.required = false;
+              passwordInput.value = '';
+            }
+          });
+        }
+      });
     </script>
   </body>
 </html>
