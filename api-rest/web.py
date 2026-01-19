@@ -31,7 +31,7 @@ templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "t
 
 
 #####################
-# dunciones helpers #
+# Funciones helpers #
 #####################
 
 # Decorador token_required
@@ -692,4 +692,74 @@ async def admin_create_task(request: Request, nombre: str = Form(...), descripci
             }
         )
 
+@router.post("/admin/reset-password")
+@token_required
+async def admin_reset_password(request: Request, username: str = Form(...)):
+    """Resetea la contraseña de un usuario (solo admins).
+    
+    Args:
+        request (Request): Petición entrante.
+        username (str): Nombre del usuario a resetear.
+        
+    Returns:
+        TemplateResponse: Dashboard con mensaje de éxito/error.
+    """
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return RedirectResponse(url='/', status_code=303)
+    
+    client, headers, user = res
+    
+    # Verificar que sea admin
+    if user.get("rol") != "admin":
+        return RedirectResponse(url='/', status_code=303)
+    
+    # Llamar al endpoint de reset password
+    resp = client.post(
+        "/auth/reset-password",
+        json={
+            "nombre_admin": user["nombre"],
+            "nombre_usuario": username
+        },
+        headers=headers
+    )
+    
+    if resp.status_code == 200:
+        # Redirigir a la página de usuarios con mensaje de éxito
+        return RedirectResponse(url=f'/admin/users?reset_success={username}', status_code=303)
+    else:
+        error_detail = resp.json().get("detail", "Error al resetear contraseña")
+        return RedirectResponse(url=f'/admin/users?reset_error={error_detail}', status_code=303)
+
+
+@router.post("/admin/delete-user")
+@token_required
+async def admin_delete_user(request: Request, username: str = Form(...)):
+    """Elimina un usuario (solo admins).
+    
+    Args:
+        request (Request): Petición entrante.
+        username (str): Nombre del usuario a eliminar.
+        
+    Returns:
+        RedirectResponse: Redirige a la lista de usuarios.
+    """
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return RedirectResponse(url='/', status_code=303)
+    
+    client, headers, user = res
+    
+    # Verificar que sea admin
+    if user.get("rol") != "admin":
+        return RedirectResponse(url='/', status_code=303)
+    
+    # Llamar al endpoint de eliminación
+    resp = client.delete(f"/usuarios/{username}", headers=headers)
+    
+    if resp.status_code == 200:
+        return RedirectResponse(url=f'/admin/users?delete_success={username}', status_code=303)
+    else:
+        error_detail = resp.json().get("detail", "Error al eliminar usuario")
+        return RedirectResponse(url=f'/admin/users?delete_error={error_detail}', status_code=303)
 

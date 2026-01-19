@@ -43,6 +43,33 @@
     </div>
     {% endif %}
 
+    {# Mensajes de éxito para operaciones #}
+    {% if request.query_params.get('reset_success') %}
+    <div class="success" style="background-color: #d4edda; color: #155724; padding: 10px; margin: 10px auto; max-width: 1200px; border-radius: 4px; border: 1px solid #c3e6cb;">
+      ✅ Contraseña del usuario '{{ request.query_params.get('reset_success') }}' reseteada exitosamente
+    </div>
+    {% endif %}
+
+    {% if request.query_params.get('delete_success') %}
+    <div class="success" style="background-color: #d4edda; color: #155724; padding: 10px; margin: 10px auto; max-width: 1200px; border-radius: 4px; border: 1px solid #c3e6cb;">
+      ✅ Usuario '{{ request.query_params.get('delete_success') }}' eliminado exitosamente
+    </div>
+    {% endif %}
+
+    {% if request.query_params.get('reset_error') %}
+    <div class="error" style="background-color: #f8d7da; color: #721c24; padding: 10px; margin: 10px auto; max-width: 1200px; border-radius: 4px; border: 1px solid #f5c6cb;">
+      ❌ {{ request.query_params.get('reset_error') }}
+    </div>
+    {% endif %}
+
+    {% if request.query_params.get('delete_error') %}
+    <div class="error" style="background-color: #f8d7da; color: #721c24; padding: 10px; margin: 10px auto; max-width: 1200px; border-radius: 4px; border: 1px solid #f5c6cb;">
+      ❌ {{ request.query_params.get('delete_error') }}
+    </div>
+    {% endif %}
+
+
+
     {# Contenido principal #}
     <main style="max-width: 1200px; margin: 0 auto; padding: 0 24px;">
       <h2 style="color: #4a7ba7; margin-bottom: 20px;">👥 Gestión de Usuarios</h2>
@@ -164,16 +191,43 @@
 
     <script>
       function resetPassword(username) {
-        if (confirm(`¿Estás seguro de resetear la contraseña del usuario "${username}"?`)) {
-          // TODO: Implementar endpoint de reset password
-          alert('Funcionalidad de resetear contraseña pendiente');
+        if (confirm(`¿Estás seguro de resetear la contraseña del usuario "${username}"?\n\nSe generará una contraseña temporal que deberás comunicarle al usuario.`)) {
+          // Crear formulario y enviarlo
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = '/admin/reset-password';
+          
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'username';
+          input.value = username;
+          
+          form.appendChild(input);
+          document.body.appendChild(form);
+          form.submit();
         }
       }
 
       function deleteUser(username) {
-        if (confirm(`¿Estás seguro de ELIMINAR el usuario "${username}"? Esta acción no se puede deshacer.`)) {
-          // TODO: Implementar endpoint de eliminar usuario
-          alert('Funcionalidad de eliminar usuario pendiente');
+        if (confirm(`⚠️ ADVERTENCIA ⚠️\n\n¿Estás COMPLETAMENTE SEGURO de eliminar el usuario "${username}"?\n\nEsta acción:\n• Es IRREVERSIBLE\n• Eliminará PERMANENTEMENTE el usuario\n• No se puede deshacer\n\nEscribe "ELIMINAR" para confirmar.`)) {
+          const confirmText = prompt('Escribe "ELIMINAR" para confirmar:');
+          if (confirmText === 'ELIMINAR') {
+            // Crear formulario y enviarlo
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/admin/delete-user';
+            
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'username';
+            input.value = username;
+            
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+          } else {
+            alert('Eliminación cancelada. El texto no coincide.');
+          }
         }
       }
     </script>
