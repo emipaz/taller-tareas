@@ -29,7 +29,6 @@ router = APIRouter()
 
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 
-
 #####################
 # Funciones helpers #
 #####################
@@ -168,7 +167,6 @@ def token_required(func):
     # devolver el wrapper adecuado según si la función es asíncrona o no
     return async_wrapper if is_coroutine else sync_wrapper
 
-
 def _get_api_client_headers_user(request: Request):
     """Obtiene `TestClient`, headers de autorización y el usuario actual.
 
@@ -198,7 +196,6 @@ def _get_api_client_headers_user(request: Request):
     user = me.json()
     return client, headers, user
 
-
 def _get_tareas_for_user(client: TestClient, headers: dict, user: dict):
     """Obtiene la lista de tareas apropiada para el usuario según su rol.
 
@@ -227,9 +224,8 @@ def _get_tareas_for_user(client: TestClient, headers: dict, user: dict):
     except Exception:
         return []
 
-
 #############################
-# Endpoints administrativos #
+# Endpoints administrativos general #
 ############################
 
 @router.post("/login")
@@ -295,7 +291,6 @@ async def login(request: Request, username: str = Form(...), password: str = For
     
     return resp
 
-
 @router.post("/set-password")
 async def set_password(request: Request, username: str = Form(...), password: str = Form(...)):
     """Establece la contraseña para un usuario que no la tiene.
@@ -341,7 +336,6 @@ async def set_password(request: Request, username: str = Form(...), password: st
     if refresh:
         resp.set_cookie("refresh_token", refresh, httponly=True)
     return resp
-
 
 @router.post("/change-password")
 @token_required
@@ -400,7 +394,6 @@ async def change_password_web(request: Request, current_password: str = Form(...
             }
         )
 
-
 @router.get("/logout")
 def logout():
     """Cierra sesión del usuario eliminando cookies de autenticación.
@@ -416,6 +409,311 @@ def logout():
     resp.delete_cookie("refresh_token")
     return resp
 
+#############################
+# Endpoints administrativos admin   #
+############################
+
+@router.get("/admin/users", response_class=HTMLResponse)
+@token_required
+async def admin_users(request: Request, page: int = 1, search: str = None):
+    """Muestra la lista de usuarios con paginación (solo admins).
+    
+    Args:
+        request (Request): Petición entrante.
+        page (int): Número de página.
+        search (str): Término de búsqueda opcional.
+        
+    Returns:
+        TemplateResponse: Lista de usuarios paginada.
+    """
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return RedirectResponse(url='/', status_code=303)
+    
+    client, headers, user = res
+    
+    # Verificar que sea admin
+    if user.get("rol") != "admin":
+        return RedirectResponse(url='/', status_code=303)
+    
+    # Llamar al endpoint de usuarios con paginación
+    params = {"page": page, "limit": 10}
+    if search:
+        params["search"] = search
+    
+    resp = client.get("/usuarios", params=params, headers=headers)
+    
+    if resp.status_code == 200:
+        data = resp.json()
+        usuarios = data.get("usuarios", [])
+        pagination = data.get("pagination", {})
+        return templates.TemplateResponse(
+            "admin_users.html",
+            {
+                "request": request,
+                "user": user,
+                "usuarios": usuarios,
+                "pagination": pagination,
+                "search": search or ""
+            }
+        )
+    else:
+        return templates.TemplateResponse(
+            "admin_users.html",
+            {
+                "request": request,
+                "user": user,
+                "usuarios": [],
+                "pagination": {},
+                "search": search or "",
+                "error": "Error al obtener usuarios"
+            }
+        )
+
+@router.post("/admin/create-user")
+@token_required
+async def admin_create_user(request: Request, username: str = Form(...), role: str = Form(...), password: str = Form(None)):
+    """Crea un nuevo usuario (solo admins).
+    
+    Args:
+        request (Request): Petición entrante.
+        username (str): Nombre del usuario.
+        role (str): Rol del usuario (user o admin).
+        password (str): Contraseña (solo para admins).
+        
+    Returns:
+        RedirectResponse: Redirige al dashboard.
+    """
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return RedirectResponse(url='/', status_code=303)
+    
+    client, headers, user = res
+    
+    # Verificar que sea admin
+    if user.get("rol") != "admin":
+        return RedirectResponse(url='/', status_code=303)
+    
+    # Crear usuario según el rol
+    if role == "admin":
+        if not password:
+            tareas = _get_tareas_for_user(client, headers, user)
+            return templates.TemplateResponse(
+                "dashboard.html",
+                {
+                    "request": request,
+                    "user": user,
+                    "tareas": tareas,
+                    "error": "Se requiere contraseña para crear un administrador"
+                }
+            )
+        resp = client.post(
+            "/usuarios/admin",
+            json={"nombre": username, "contraseña": password},
+            headers=headers
+        )
+    else:
+        resp = client.post(
+            "/usuarios",
+            json={"nombre": username},
+            headers=headers
+        )
+    
+    tareas = _get_tareas_for_user(client, headers, user)
+    
+    if resp.status_code == 200:
+        return templates.TemplateResponse(
+            "dashboard.html",
+            {
+                "request": request,
+                "user": user,
+                "tareas": tareas,
+                "success": f"Usuario '{username}' creado exitosamente"
+            }
+        )
+    else:
+        error_detail = resp.json().get("detail", "Error al crear usuario")
+        return templates.TemplateResponse(
+            "dashboard.html",
+            {
+                "request": request,
+                "user": user,
+                "tareas": tareas,
+                "error": error_detail
+            }
+        )
+
+@router.post("/admin/reset-password")
+@token_required
+async def admin_reset_password(request: Request, username: str = Form(...)):
+    """Resetea la contraseña de un usuario (solo admins).
+    
+    Args:
+        request (Request): Petición entrante.
+        username (str): Nombre del usuario a resetear.
+        
+    Returns:
+        TemplateResponse: Dashboard con mensaje de éxito/error.
+    """
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return RedirectResponse(url='/', status_code=303)
+    
+    client, headers, user = res
+    
+    # Verificar que sea admin
+    if user.get("rol") != "admin":
+        return RedirectResponse(url='/', status_code=303)
+    
+    # Llamar al endpoint de reset password
+    resp = client.post(
+        "/auth/reset-password",
+        json={
+            "nombre_admin": user["nombre"],
+            "nombre_usuario": username
+        },
+        headers=headers
+    )
+    
+    if resp.status_code == 200:
+        # Redirigir a la página de usuarios con mensaje de éxito
+        return RedirectResponse(url=f'/admin/users?reset_success={username}', status_code=303)
+    else:
+        error_detail = resp.json().get("detail", "Error al resetear contraseña")
+        return RedirectResponse(url=f'/admin/users?reset_error={error_detail}', status_code=303)
+
+@router.post("/admin/delete-user")
+@token_required
+async def admin_delete_user(request: Request, username: str = Form(...)):
+    """Elimina un usuario (solo admins).
+    
+    Args:
+        request (Request): Petición entrante.
+        username (str): Nombre del usuario a eliminar.
+        
+    Returns:
+        RedirectResponse: Redirige a la lista de usuarios.
+    """
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return RedirectResponse(url='/', status_code=303)
+    
+    client, headers, user = res
+    
+    # Verificar que sea admin
+    if user.get("rol") != "admin":
+        return RedirectResponse(url='/', status_code=303)
+    
+    # Llamar al endpoint de eliminación
+    resp = client.delete(f"/usuarios/{username}", headers=headers)
+    
+    if resp.status_code == 200:
+        return RedirectResponse(url=f'/admin/users?delete_success={username}', status_code=303)
+    else:
+        error_detail = resp.json().get("detail", "Error al eliminar usuario")
+        return RedirectResponse(url=f'/admin/users?delete_error={error_detail}', status_code=303)
+
+@router.get("/admin/stats", response_class=HTMLResponse)
+@token_required
+async def admin_stats(request: Request):
+    """Muestra las estadísticas del sistema (solo admins).
+    
+    Args:
+        request (Request): Petición entrante.
+        
+    Returns:
+        TemplateResponse: Página con estadísticas del sistema.
+    """
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return RedirectResponse(url='/', status_code=303)
+    
+    client, headers, user = res
+    
+    # Verificar que sea admin
+    if user.get("rol") != "admin":
+        return RedirectResponse(url='/', status_code=303)
+    
+    # Llamar al endpoint de estadísticas
+    resp = client.get("/stats", headers=headers)
+    
+    if resp.status_code == 200:
+        stats = resp.json()
+        return templates.TemplateResponse(
+            "admin_stats.html",
+            {
+                "request": request,
+                "user": user,
+                "stats": stats
+            }
+        )
+    else:
+        return templates.TemplateResponse(
+            "admin_stats.html",
+            {
+                "request": request,
+                "user": user,
+                "error": "Error al obtener estadísticas"
+            }
+        )
+
+#############################
+# Endpoints tareas  admin   #
+############################
+
+@router.post("/admin/create-task")
+@token_required
+async def admin_create_task(request: Request, nombre: str = Form(...), descripcion: str = Form(...)):
+    """Crea una nueva tarea (solo admins).
+    
+    Args:
+        request (Request): Petición entrante.
+        nombre (str): Nombre de la tarea.
+        descripcion (str): Descripción de la tarea.
+        
+    Returns:
+        RedirectResponse: Redirige al dashboard.
+    """
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return RedirectResponse(url='/', status_code=303)
+    
+    client, headers, user = res
+    
+    # Verificar que sea admin
+    if user.get("rol") != "admin":
+        return RedirectResponse(url='/', status_code=303)
+    
+    # Crear tarea
+    resp = client.post(
+        "/tareas",
+        json={"nombre": nombre, "descripcion": descripcion},
+        headers=headers
+    )
+    
+    tareas = _get_tareas_for_user(client, headers, user)
+    
+    if resp.status_code == 200:
+        return templates.TemplateResponse(
+            "dashboard.html",
+            {
+                "request": request,
+                "user": user,
+                "tareas": tareas,
+                "success": f"Tarea '{nombre}' creada exitosamente"
+            }
+        )
+    else:
+        error_detail = resp.json().get("detail", "Error al crear tarea")
+        return templates.TemplateResponse(
+            "dashboard.html",
+            {
+                "request": request,
+                "user": user,
+                "tareas": tareas,
+                "error": error_detail
+            }
+        )
 
 ##########################
 # Endpoints de la UI web #
@@ -501,266 +799,4 @@ def tareas_lista(request: Request):
     client, headers, user = res
     tareas = _get_tareas_for_user(client, headers, user)
     return templates.TemplateResponse("_tareas_fragment.html", {"request": request, "tareas": tareas})
-
-
-#############################
-# Endpoints administrativos #
-#############################
-
-@router.get("/admin/users", response_class=HTMLResponse)
-@token_required
-async def admin_users(request: Request, page: int = 1, search: str = None):
-    """Muestra la lista de usuarios con paginación (solo admins).
-    
-    Args:
-        request (Request): Petición entrante.
-        page (int): Número de página.
-        search (str): Término de búsqueda opcional.
-        
-    Returns:
-        TemplateResponse: Lista de usuarios paginada.
-    """
-    res = _get_api_client_headers_user(request)
-    if not res:
-        return RedirectResponse(url='/', status_code=303)
-    
-    client, headers, user = res
-    
-    # Verificar que sea admin
-    if user.get("rol") != "admin":
-        return RedirectResponse(url='/', status_code=303)
-    
-    # Llamar al endpoint de usuarios con paginación
-    params = {"page": page, "limit": 10}
-    if search:
-        params["search"] = search
-    
-    resp = client.get("/usuarios", params=params, headers=headers)
-    
-    if resp.status_code == 200:
-        data = resp.json()
-        usuarios = data.get("usuarios", [])
-        pagination = data.get("pagination", {})
-        return templates.TemplateResponse(
-            "admin_users.html",
-            {
-                "request": request,
-                "user": user,
-                "usuarios": usuarios,
-                "pagination": pagination,
-                "search": search or ""
-            }
-        )
-    else:
-        return templates.TemplateResponse(
-            "admin_users.html",
-            {
-                "request": request,
-                "user": user,
-                "usuarios": [],
-                "pagination": {},
-                "search": search or "",
-                "error": "Error al obtener usuarios"
-            }
-        )
-
-
-@router.post("/admin/create-user")
-@token_required
-async def admin_create_user(request: Request, username: str = Form(...), role: str = Form(...), password: str = Form(None)):
-    """Crea un nuevo usuario (solo admins).
-    
-    Args:
-        request (Request): Petición entrante.
-        username (str): Nombre del usuario.
-        role (str): Rol del usuario (user o admin).
-        password (str): Contraseña (solo para admins).
-        
-    Returns:
-        RedirectResponse: Redirige al dashboard.
-    """
-    res = _get_api_client_headers_user(request)
-    if not res:
-        return RedirectResponse(url='/', status_code=303)
-    
-    client, headers, user = res
-    
-    # Verificar que sea admin
-    if user.get("rol") != "admin":
-        return RedirectResponse(url='/', status_code=303)
-    
-    # Crear usuario según el rol
-    if role == "admin":
-        if not password:
-            tareas = _get_tareas_for_user(client, headers, user)
-            return templates.TemplateResponse(
-                "dashboard.html",
-                {
-                    "request": request,
-                    "user": user,
-                    "tareas": tareas,
-                    "error": "Se requiere contraseña para crear un administrador"
-                }
-            )
-        resp = client.post(
-            "/usuarios/admin",
-            json={"nombre": username, "contraseña": password},
-            headers=headers
-        )
-    else:
-        resp = client.post(
-            "/usuarios",
-            json={"nombre": username},
-            headers=headers
-        )
-    
-    tareas = _get_tareas_for_user(client, headers, user)
-    
-    if resp.status_code == 200:
-        return templates.TemplateResponse(
-            "dashboard.html",
-            {
-                "request": request,
-                "user": user,
-                "tareas": tareas,
-                "success": f"Usuario '{username}' creado exitosamente"
-            }
-        )
-    else:
-        error_detail = resp.json().get("detail", "Error al crear usuario")
-        return templates.TemplateResponse(
-            "dashboard.html",
-            {
-                "request": request,
-                "user": user,
-                "tareas": tareas,
-                "error": error_detail
-            }
-        )
-
-
-@router.post("/admin/create-task")
-@token_required
-async def admin_create_task(request: Request, nombre: str = Form(...), descripcion: str = Form(...)):
-    """Crea una nueva tarea (solo admins).
-    
-    Args:
-        request (Request): Petición entrante.
-        nombre (str): Nombre de la tarea.
-        descripcion (str): Descripción de la tarea.
-        
-    Returns:
-        RedirectResponse: Redirige al dashboard.
-    """
-    res = _get_api_client_headers_user(request)
-    if not res:
-        return RedirectResponse(url='/', status_code=303)
-    
-    client, headers, user = res
-    
-    # Verificar que sea admin
-    if user.get("rol") != "admin":
-        return RedirectResponse(url='/', status_code=303)
-    
-    # Crear tarea
-    resp = client.post(
-        "/tareas",
-        json={"nombre": nombre, "descripcion": descripcion},
-        headers=headers
-    )
-    
-    tareas = _get_tareas_for_user(client, headers, user)
-    
-    if resp.status_code == 200:
-        return templates.TemplateResponse(
-            "dashboard.html",
-            {
-                "request": request,
-                "user": user,
-                "tareas": tareas,
-                "success": f"Tarea '{nombre}' creada exitosamente"
-            }
-        )
-    else:
-        error_detail = resp.json().get("detail", "Error al crear tarea")
-        return templates.TemplateResponse(
-            "dashboard.html",
-            {
-                "request": request,
-                "user": user,
-                "tareas": tareas,
-                "error": error_detail
-            }
-        )
-
-@router.post("/admin/reset-password")
-@token_required
-async def admin_reset_password(request: Request, username: str = Form(...)):
-    """Resetea la contraseña de un usuario (solo admins).
-    
-    Args:
-        request (Request): Petición entrante.
-        username (str): Nombre del usuario a resetear.
-        
-    Returns:
-        TemplateResponse: Dashboard con mensaje de éxito/error.
-    """
-    res = _get_api_client_headers_user(request)
-    if not res:
-        return RedirectResponse(url='/', status_code=303)
-    
-    client, headers, user = res
-    
-    # Verificar que sea admin
-    if user.get("rol") != "admin":
-        return RedirectResponse(url='/', status_code=303)
-    
-    # Llamar al endpoint de reset password
-    resp = client.post(
-        "/auth/reset-password",
-        json={
-            "nombre_admin": user["nombre"],
-            "nombre_usuario": username
-        },
-        headers=headers
-    )
-    
-    if resp.status_code == 200:
-        # Redirigir a la página de usuarios con mensaje de éxito
-        return RedirectResponse(url=f'/admin/users?reset_success={username}', status_code=303)
-    else:
-        error_detail = resp.json().get("detail", "Error al resetear contraseña")
-        return RedirectResponse(url=f'/admin/users?reset_error={error_detail}', status_code=303)
-
-
-@router.post("/admin/delete-user")
-@token_required
-async def admin_delete_user(request: Request, username: str = Form(...)):
-    """Elimina un usuario (solo admins).
-    
-    Args:
-        request (Request): Petición entrante.
-        username (str): Nombre del usuario a eliminar.
-        
-    Returns:
-        RedirectResponse: Redirige a la lista de usuarios.
-    """
-    res = _get_api_client_headers_user(request)
-    if not res:
-        return RedirectResponse(url='/', status_code=303)
-    
-    client, headers, user = res
-    
-    # Verificar que sea admin
-    if user.get("rol") != "admin":
-        return RedirectResponse(url='/', status_code=303)
-    
-    # Llamar al endpoint de eliminación
-    resp = client.delete(f"/usuarios/{username}", headers=headers)
-    
-    if resp.status_code == 200:
-        return RedirectResponse(url=f'/admin/users?delete_success={username}', status_code=303)
-    else:
-        error_detail = resp.json().get("detail", "Error al eliminar usuario")
-        return RedirectResponse(url=f'/admin/users?delete_error={error_detail}', status_code=303)
 

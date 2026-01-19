@@ -1,0 +1,718 @@
+{# 
+  Plantilla: Estadísticas del Sistema (Admin)
+  
+  Descripción:
+    Panel de estadísticas para administradores. Muestra métricas
+    detalladas sobre usuarios y tareas del sistema.
+  
+  Variables de contexto:
+    - user (Usuario): Objeto del usuario autenticado (debe ser admin)
+    - stats (dict): Objeto con estadísticas del sistema
+      - usuarios (dict): Estadísticas de usuarios
+        - total (int): Total de usuarios
+        - admins (int): Número de administradores
+        - users (int): Número de usuarios estándar
+        - sin_password (int): Usuarios sin contraseña establecida
+      - tareas (dict): Estadísticas de tareas
+        - total (int): Total de tareas
+        - pendientes (int): Tareas pendientes
+        - finalizadas (int): Tareas finalizadas
+        - sin_asignar (int): Tareas sin asignar
+    - error (str, opcional): Mensaje de error
+  
+  Dependencias:
+    - /static/main.css: Estilos globales
+#}
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Estadísticas del Sistema</title>
+    <link rel="stylesheet" href="/static/main.css" />
+    <style>
+      /* =============================================================================
+         GUÍA DE ESTILOS - PÁGINA DE ESTADÍSTICAS
+         =============================================================================
+         
+         Esta hoja de estilos controla la apariencia de la página de estadísticas
+         del sistema. Está organizada en secciones para facilitar la navegación
+         y modificación de elementos específicos.
+         
+         TABLA DE CONTENIDOS:
+         1. Estilos Base (body)
+         2. Contenedor Principal (.stats-container)
+         3. Encabezado (.stats-header)
+         4. Grid de Tarjetas (.stats-grid)
+         5. Tarjetas de Estadísticas (.stats-card)
+         6. Elementos de Estadística (.stat-item, .stat-label, .stat-value)
+         7. Clases de Color para Valores (.primary, .success, .warning, .danger)
+         8. Botones de Acción (.back-button, .refresh-button)
+         9. Mensajes de Error (.error-message)
+         10. Barras de Progreso (.progress-bar, .progress-fill)
+         11. Textos de Porcentaje (.percentage)
+         
+         ============================================================================= */
+
+      /* ========================================================================
+         1. ESTILOS BASE
+         ======================================================================== */
+      
+      body {
+        /* Fondo principal de la página - Negro profundo para alto contraste */
+        background: #1a1a1a;
+        
+        /* Color de texto por defecto - Blanco puro para máxima legibilidad */
+        color: #ffffff;
+      }
+
+      /* ========================================================================
+         2. CONTENEDOR PRINCIPAL
+         ======================================================================== */
+      
+      .stats-container {
+        /* Ancho máximo del contenido - Previene líneas de texto muy largas */
+        max-width: 1200px;
+        
+        /* Centrado horizontal automático */
+        margin: 20px auto;
+        
+        /* Espaciado interno para separar del borde en pantallas pequeñas */
+        padding: 20px;
+      }
+
+      /* ========================================================================
+         3. ENCABEZADO DE ESTADÍSTICAS
+         ======================================================================== */
+      
+      .stats-header {
+        /* Centrado del texto del encabezado */
+        text-align: center;
+        
+        /* Separación inferior del encabezado */
+        margin-bottom: 40px;
+      }
+
+      .stats-header h1 {
+        /* Color del título principal */
+        color: #ffffff;
+        
+        /* Tamaño grande para jerarquía visual */
+        font-size: 2.5em;
+        
+        /* Separación inferior del título */
+        margin-bottom: 10px;
+        
+        /* Sombra para dar profundidad y mejorar legibilidad */
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      .stats-header p {
+        /* Color del subtítulo - Gris claro para contraste con el título */
+        color: #e0e0e0;
+        
+        /* Tamaño ligeramente mayor que el texto normal */
+        font-size: 1.1em;
+      }
+
+      /* ========================================================================
+         4. GRID DE TARJETAS
+         ======================================================================== 
+         
+         Sistema de grid responsivo que se adapta automáticamente al espacio
+         disponible. Las tarjetas tienen un mínimo de 300px y se distribuyen
+         equitativamente en el espacio disponible.
+         ======================================================================== */
+      
+      .stats-grid {
+        /* Grid CSS con columnas automáticas adaptables */
+        display: grid;
+        
+        /* Columnas: mínimo 300px, máximo igual distribución del espacio (1fr) */
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        
+        /* Espacio entre tarjetas */
+        gap: 30px;
+        
+        /* Separación inferior del grid */
+        margin-bottom: 30px;
+      }
+
+      /* ========================================================================
+         5. TARJETAS DE ESTADÍSTICAS
+         ======================================================================== 
+         
+         Cada tarjeta contiene un grupo de métricas relacionadas. Incluye
+         efectos hover para interactividad visual.
+         ======================================================================== */
+      
+      .stats-card {
+        /* Fondo con gradiente diagonal - De azul grisáceo oscuro a medio */
+        /* Cambiar estos valores para modificar el color de fondo de las tarjetas */
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        
+        /* Bordes redondeados para suavidad visual */
+        border-radius: 12px;
+        
+        /* Espaciado interno de la tarjeta */
+        padding: 25px;
+        
+        /* Sombra suave para dar profundidad */
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        
+        /* Transiciones suaves al hacer hover */
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        
+        /* Borde sutil para definir límites - Cambiar #4a5f7f para otro color de borde */
+        border: 1px solid #4a5f7f;
+      }
+
+      .stats-card:hover {
+        /* Elevación al pasar el cursor - Mueve la tarjeta 5px hacia arriba */
+        transform: translateY(-5px);
+        
+        /* Sombra más pronunciada en hover para efecto de elevación */
+        box-shadow: 0 8px 12px rgba(0, 0, 0, 0.5);
+      }
+
+      .stats-card h2 {
+        /* Color del título de la tarjeta - Azul claro */
+        /* Cambiar #64b5f6 para modificar el color de los títulos de sección */
+        color: #64b5f6;
+        
+        /* Tamaño del título de la tarjeta */
+        font-size: 1.5em;
+        
+        /* Separación inferior del título */
+        margin-bottom: 20px;
+        
+        /* Flexbox para alinear emoji e icono con texto */
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      /* ========================================================================
+         6. ELEMENTOS DE ESTADÍSTICA
+         ======================================================================== 
+         
+         Cada stat-item es una fila dentro de una tarjeta que muestra una
+         etiqueta y su valor correspondiente.
+         ======================================================================== */
+      
+      .stat-item {
+        /* Flexbox para distribuir etiqueta a la izquierda y valor a la derecha */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        
+        /* Espaciado vertical de cada elemento */
+        padding: 12px 0;
+        
+        /* Línea separadora entre elementos - Color semi-transparente */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .stat-item:last-child {
+        /* Eliminar borde inferior del último elemento para evitar doble línea */
+        border-bottom: none;
+      }
+
+      .stat-label {
+        /* Color de las etiquetas - Gris muy claro para buen contraste */
+        /* Cambiar #e0e0e0 para modificar el color de todas las etiquetas */
+        color: #e0e0e0;
+        
+        /* Tamaño de fuente ligeramente mayor al texto base */
+        font-size: 1.05em;
+        
+        /* Peso de fuente medio para distinguir de texto normal */
+        font-weight: 500;
+      }
+
+      .stat-value {
+        /* Color base de los valores numéricos - Blanco para máximo contraste */
+        color: #ffffff;
+        
+        /* Tamaño grande para jerarquía visual - Los números son lo más importante */
+        font-size: 1.8em;
+        
+        /* Peso bold para énfasis */
+        font-weight: bold;
+        
+        /* Sombra sutil para mejorar legibilidad sobre fondos variados */
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      /* ========================================================================
+         7. CLASES DE COLOR PARA VALORES
+         ======================================================================== 
+         
+         Estas clases se aplican a .stat-value para indicar diferentes tipos
+         de información mediante color. Útil para interpretación rápida.
+         
+         GUÍA DE COLORES:
+         - primary: Azul claro (#64b5f6) - Información general/neutral
+         - success: Verde (#4caf50) - Métricas positivas/completadas
+         - warning: Naranja (#ffb74d) - Advertencias/requiere atención
+         - danger: Rojo (#ef5350) - Problemas/crítico
+         ======================================================================== */
+      
+      .stat-value.primary {
+        /* Azul claro - Para valores principales o neutrales */
+        /* Cambiar #64b5f6 para modificar todos los valores primarios */
+        color: #64b5f6;
+      }
+
+      .stat-value.success {
+        /* Verde intenso - Para métricas positivas (tareas completadas, etc.) */
+        /* Cambiar #4caf50 para modificar todos los valores de éxito */
+        color: #4caf50;
+      }
+
+      .stat-value.warning {
+        /* Naranja - Para advertencias o métricas que requieren atención */
+        /* Cambiar #ffb74d para modificar todos los valores de advertencia */
+        color: #ffb74d;
+      }
+
+      .stat-value.danger {
+        /* Rojo - Para problemas o métricas críticas */
+        /* Cambiar #ef5350 para modificar todos los valores de peligro */
+        color: #ef5350;
+      }
+
+      /* ========================================================================
+         8. BOTONES DE ACCIÓN
+         ======================================================================== */
+      
+      .back-button {
+        /* Mostrar como bloque en línea para permitir padding */
+        display: inline-block;
+        
+        /* Márgenes alrededor del botón */
+        margin: 10px;
+        
+        /* Espaciado interno del botón */
+        padding: 12px 30px;
+        
+        /* Color de fondo - Azul estándar */
+        /* Cambiar #2196f3 para modificar el color del botón "Volver" */
+        background: #2196f3;
+        
+        /* Color del texto del botón */
+        color: white;
+        
+        /* Eliminar subrayado de enlace */
+        text-decoration: none;
+        
+        /* Bordes redondeados */
+        border-radius: 6px;
+        
+        /* Transición suave del color de fondo */
+        transition: background 0.3s ease;
+        
+        /* Centrado del texto */
+        text-align: center;
+        
+        /* Texto en negrita */
+        font-weight: bold;
+      }
+
+      .back-button:hover {
+        /* Color más oscuro al pasar el cursor */
+        /* Cambiar #1976d2 para modificar el color hover del botón "Volver" */
+        background: #1976d2;
+      }
+
+      .refresh-button {
+        /* Similar al back-button pero con color verde */
+        display: inline-block;
+        margin: 10px;
+        padding: 12px 30px;
+        
+        /* Color de fondo verde para botón de actualizar */
+        /* Cambiar #4caf50 para modificar el color del botón "Actualizar" */
+        background: #4caf50;
+        
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        transition: background 0.3s ease;
+        
+        /* Sin borde para botón HTML <button> */
+        border: none;
+        
+        /* Cursor pointer para indicar clickeable */
+        cursor: pointer;
+        
+        font-size: 1em;
+        font-weight: bold;
+      }
+
+      .refresh-button:hover {
+        /* Verde más oscuro al pasar el cursor */
+        /* Cambiar #45a049 para modificar el color hover del botón "Actualizar" */
+        background: #45a049;
+      }
+
+      .button-container {
+        /* Centrado de los botones */
+        text-align: center;
+        
+        /* Separación superior del contenedor de botones */
+        margin-top: 30px;
+      }
+
+      /* ========================================================================
+         9. MENSAJES DE ERROR
+         ======================================================================== */
+      
+      .error-message {
+        /* Fondo rojo para mensajes de error */
+        /* Cambiar #f44336 para modificar el color de fondo de errores */
+        background-color: #f44336;
+        
+        /* Texto blanco para alto contraste sobre rojo */
+        color: #ffffff;
+        
+        /* Espaciado interno */
+        padding: 15px;
+        
+        /* Centrado con ancho máximo */
+        margin: 20px auto;
+        max-width: 600px;
+        
+        /* Bordes redondeados */
+        border-radius: 8px;
+        
+        /* Borde rojo más oscuro para definición */
+        /* Cambiar #d32f2f para modificar el color del borde de errores */
+        border: 1px solid #d32f2f;
+        
+        /* Texto centrado */
+        text-align: center;
+        
+        /* Texto en negrita para énfasis */
+        font-weight: bold;
+      }
+
+      /* ========================================================================
+         10. BARRAS DE PROGRESO
+         ======================================================================== 
+         
+         Las barras de progreso muestran visualmente el porcentaje de cada
+         métrica. Consisten en un contenedor (.progress-bar) y un relleno
+         (.progress-fill) que se anima.
+         ======================================================================== */
+      
+      .progress-bar {
+        /* Ancho completo del contenedor */
+        width: 100%;
+        
+        /* Altura de la barra - Cambiar para barras más gruesas/delgadas */
+        height: 8px;
+        
+        /* Fondo semi-transparente para la parte vacía de la barra */
+        background: rgba(255, 255, 255, 0.15);
+        
+        /* Bordes redondeados */
+        border-radius: 4px;
+        
+        /* Separación superior de otros elementos */
+        margin-top: 8px;
+        
+        /* Ocultar desbordamiento para mantener bordes redondeados */
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        /* Altura completa del contenedor */
+        height: 100%;
+        
+        /* Gradiente azul por defecto - Se puede sobrescribir inline */
+        /* Cambiar estos valores para modificar el color por defecto de las barras */
+        background: linear-gradient(90deg, #64b5f6, #2196f3);
+        
+        /* Bordes redondeados que coinciden con el contenedor */
+        border-radius: 4px;
+        
+        /* Transición suave de la animación de ancho */
+        transition: width 0.5s ease;
+      }
+
+      /* ========================================================================
+         11. TEXTOS DE PORCENTAJE
+         ======================================================================== */
+      
+      .percentage {
+        /* Tamaño ligeramente menor que el texto normal */
+        font-size: 0.95em;
+        
+        /* Color gris claro para diferenciarlo de valores principales */
+        /* Cambiar #e0e0e0 para modificar el color de los porcentajes */
+        color: #e0e0e0;
+        
+        /* Separación superior del elemento anterior (barra de progreso) */
+        margin-top: 4px;
+        
+        /* Peso medio para legibilidad */
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stats-container">
+      {# Encabezado #}
+      <div class="stats-header">
+        <h1>📊 Estadísticas del Sistema</h1>
+        <p>
+          Panel de control administrativo - Vista general del sistema
+        </p>
+      </div>
+
+      {# Mensaje de error si existe #}
+      {% if error %}
+      <div class="error-message">
+        {{ error }}
+      </div>
+      {% endif %}
+
+      {# Grid de estadísticas #}
+      {% if stats %}
+      <div class="stats-grid">
+        {# Tarjeta de Usuarios #}
+        <div class="stats-card">
+          <h2>👥 Usuarios</h2>
+          
+          <div class="stat-item">
+            <span class="stat-label">Total de usuarios</span>
+            <span class="stat-value primary">{{ stats.usuarios.total }}</span>
+          </div>
+          
+          <div class="stat-item">
+            <span class="stat-label">Administradores</span>
+            <span class="stat-value success">{{ stats.usuarios.admins }}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ (stats.usuarios.admins / stats.usuarios.total * 100) if stats.usuarios.total > 0 else 0 }}%;"></div>
+          </div>
+          <div class="percentage">
+            {{ "%.1f" | format((stats.usuarios.admins / stats.usuarios.total * 100) if stats.usuarios.total > 0 else 0) }}% del total
+          </div>
+          
+          <div class="stat-item">
+            <span class="stat-label">Usuarios estándar</span>
+            <span class="stat-value success">{{ stats.usuarios.users }}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ (stats.usuarios.users / stats.usuarios.total * 100) if stats.usuarios.total > 0 else 0 }}%;"></div>
+          </div>
+          <div class="percentage">
+            {{ "%.1f" | format((stats.usuarios.users / stats.usuarios.total * 100) if stats.usuarios.total > 0 else 0) }}% del total
+          </div>
+          
+          <div class="stat-item">
+            <span class="stat-label">Sin contraseña</span>
+            <span class="stat-value {% if stats.usuarios.sin_password > 0 %}warning{% else %}success{% endif %}">
+              {{ stats.usuarios.sin_password }}
+            </span>
+          </div>
+          {% if stats.usuarios.sin_password > 0 %}
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ (stats.usuarios.sin_password / stats.usuarios.total * 100) if stats.usuarios.total > 0 else 0 }}%; background: linear-gradient(90deg, #ffb74d, #ff9800);"></div>
+          </div>
+          <div class="percentage">
+            ⚠️ {{ "%.1f" | format((stats.usuarios.sin_password / stats.usuarios.total * 100) if stats.usuarios.total > 0 else 0) }}% requiere contraseña
+          </div>
+          {% endif %}
+        </div>
+
+        {# Tarjeta de Tareas #}
+        <div class="stats-card">
+          <h2>📋 Tareas</h2>
+          
+          <div class="stat-item">
+            <span class="stat-label">Total de tareas</span>
+            <span class="stat-value primary">{{ stats.tareas.total }}</span>
+          </div>
+          
+          <div class="stat-item">
+            <span class="stat-label">Pendientes</span>
+            <span class="stat-value warning">{{ stats.tareas.pendientes }}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ (stats.tareas.pendientes / stats.tareas.total * 100) if stats.tareas.total > 0 else 0 }}%; background: linear-gradient(90deg, #ffb74d, #ff9800);"></div>
+          </div>
+          <div class="percentage">
+            {{ "%.1f" | format((stats.tareas.pendientes / stats.tareas.total * 100) if stats.tareas.total > 0 else 0) }}% del total
+          </div>
+          
+          <div class="stat-item">
+            <span class="stat-label">Finalizadas</span>
+            <span class="stat-value success">{{ stats.tareas.finalizadas }}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ (stats.tareas.finalizadas / stats.tareas.total * 100) if stats.tareas.total > 0 else 0 }}%; background: linear-gradient(90deg, #81c784, #66bb6a);"></div>
+          </div>
+          <div class="percentage">
+            ✅ {{ "%.1f" | format((stats.tareas.finalizadas / stats.tareas.total * 100) if stats.tareas.total > 0 else 0) }}% completadas
+          </div>
+          
+          <div class="stat-item">
+            <span class="stat-label">Sin asignar</span>
+            <span class="stat-value {% if stats.tareas.sin_asignar > 0 %}danger{% else %}success{% endif %}">
+              {{ stats.tareas.sin_asignar }}
+            </span>
+          </div>
+          {% if stats.tareas.sin_asignar > 0 %}
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ (stats.tareas.sin_asignar / stats.tareas.total * 100) if stats.tareas.total > 0 else 0 }}%; background: linear-gradient(90deg, #ef5350, #e53935);"></div>
+          </div>
+          <div class="percentage">
+            ⚠️ {{ "%.1f" | format((stats.tareas.sin_asignar / stats.tareas.total * 100) if stats.tareas.total > 0 else 0) }}% sin asignar
+          </div>
+          {% endif %}
+        </div>
+
+        {# Tarjeta de Resumen General #}
+        <div class="stats-card">
+          <h2>📈 Resumen General</h2>
+          
+          <div class="stat-item">
+            <span class="stat-label">Tasa de finalización</span>
+            <span class="stat-value success">
+              {{ "%.1f" | format((stats.tareas.finalizadas / stats.tareas.total * 100) if stats.tareas.total > 0 else 0) }}%
+            </span>
+          </div>
+          
+          <div class="stat-item">
+            <span class="stat-label">Tareas por usuario</span>
+            <span class="stat-value primary">
+              {{ "%.1f" | format((stats.tareas.total / stats.usuarios.users) if stats.usuarios.users > 0 else 0) }}
+            </span>
+          </div>
+          
+          <div class="stat-item">
+            <span class="stat-label">Usuarios activos</span>
+            <span class="stat-value success">
+              {{ stats.usuarios.total - stats.usuarios.sin_password }}
+            </span>
+          </div>
+          <div class="percentage">
+            {{ "%.1f" | format(((stats.usuarios.total - stats.usuarios.sin_password) / stats.usuarios.total * 100) if stats.usuarios.total > 0 else 0) }}% del total
+          </div>
+          
+          <div class="stat-item">
+            <span class="stat-label">Estado del sistema</span>
+            <span class="stat-value {% if stats.tareas.pendientes > stats.tareas.finalizadas %}warning{% else %}success{% endif %}">
+              {% if stats.tareas.pendientes > stats.tareas.finalizadas %}
+                En progreso
+              {% else %}
+                Óptimo
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# Botones de acción #}
+      <div class="button-container">
+        <button class="refresh-button" onclick="location.reload()">🔄 Actualizar</button>
+        <a href="/" class="back-button">← Volver al Dashboard</a>
+      </div>
+    </div>
+
+    <script>
+      /**
+       * ==========================================================================
+       * SCRIPT DE ANIMACIÓN DE BARRAS DE PROGRESO
+       * ==========================================================================
+       * 
+       * Este script se ejecuta cuando el DOM está completamente cargado y
+       * anima las barras de progreso desde 0% hasta su valor real para crear
+       * un efecto visual atractivo.
+       * 
+       * FUNCIONAMIENTO:
+       * 1. Espera a que el DOM esté listo (DOMContentLoaded)
+       * 2. Selecciona todas las barras de progreso (.progress-fill)
+       * 3. Para cada barra:
+       *    - Guarda el ancho objetivo (definido en el HTML)
+       *    - Resetea el ancho a 0%
+       *    - Después de 100ms, anima hasta el ancho objetivo
+       * 
+       * PERSONALIZACIÓN:
+       * - Cambiar el timeout (100) para ajustar el delay inicial de la animación
+       * - La velocidad de la animación se controla en CSS (.progress-fill transition)
+       * 
+       * ==========================================================================
+       */
+      
+      /**
+       * Event listener para ejecutar código cuando el DOM esté listo
+       * 
+       * @event DOMContentLoaded - Se dispara cuando el HTML está completamente
+       *                           parseado sin esperar CSS, imágenes o subframes
+       */
+      document.addEventListener('DOMContentLoaded', function() {
+        /**
+         * Anima todas las barras de progreso en la página
+         * 
+         * Selecciona todos los elementos con clase .progress-fill,
+         * que son las barras internas que muestran el porcentaje visualmente.
+         * 
+         * @type {NodeList} progressBars - Lista de elementos .progress-fill
+         */
+        const progressBars = document.querySelectorAll('.progress-fill');
+        
+        /**
+         * Itera sobre cada barra de progreso para animarla individualmente
+         * 
+         * @param {HTMLElement} bar - Elemento individual de barra de progreso
+         */
+        progressBars.forEach(bar => {
+          /**
+           * Captura el ancho objetivo de la barra
+           * 
+           * Este valor viene del atributo style inline del HTML,
+           * calculado dinámicamente por Jinja2 basado en las estadísticas
+           * 
+           * @type {string} width - Valor de ancho en formato "XX%" o "XX.X%"
+           */
+          const width = bar.style.width;
+          
+          /**
+           * Resetea el ancho a 0% para preparar la animación
+           * 
+           * Esto hace que la barra comience invisible (sin ancho)
+           * para luego crecer hasta su valor real
+           */
+          bar.style.width = '0%';
+          
+          /**
+           * Programa la animación después de un breve delay
+           * 
+           * El setTimeout crea un pequeño retraso (100ms) que permite:
+           * 1. Que el navegador renderice el estado inicial (0%)
+           * 2. Que la transición CSS se active correctamente
+           * 3. Un efecto visual más suave y perceptible
+           * 
+           * @param {Function} callback - Función que restaura el ancho original
+           * @param {number} delay - Milisegundos de espera (100ms)
+           */
+          setTimeout(() => {
+            /**
+             * Restaura el ancho al valor objetivo
+             * 
+             * Al cambiar el width, la propiedad CSS 'transition' de .progress-fill
+             * hace que el cambio sea gradual en lugar de instantáneo,
+             * creando la animación de llenado de la barra.
+             */
+            bar.style.width = width;
+          }, 100);
+        });
+      });
+    </script>
+  </body>
+</html>
