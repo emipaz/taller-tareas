@@ -43,32 +43,33 @@
     </div>
     {% endif %}
 
-    {# Mensajes de éxito para operaciones #}
+    {# Mensajes de éxito para operaciones de reset#}
     {% if request.query_params.get('reset_success') %}
     <div class="success" style="background-color: #d4edda; color: #155724; padding: 10px; margin: 10px auto; max-width: 1200px; border-radius: 4px; border: 1px solid #c3e6cb;">
       ✅ Contraseña del usuario '{{ request.query_params.get('reset_success') }}' reseteada exitosamente
     </div>
     {% endif %}
 
+    {# Mensajes de éxito para operaciones de eliminación #}
     {% if request.query_params.get('delete_success') %}
     <div class="success" style="background-color: #d4edda; color: #155724; padding: 10px; margin: 10px auto; max-width: 1200px; border-radius: 4px; border: 1px solid #c3e6cb;">
       ✅ Usuario '{{ request.query_params.get('delete_success') }}' eliminado exitosamente
     </div>
     {% endif %}
 
+    {# Mensajes de error para operaciones de reset #}
     {% if request.query_params.get('reset_error') %}
     <div class="error" style="background-color: #f8d7da; color: #721c24; padding: 10px; margin: 10px auto; max-width: 1200px; border-radius: 4px; border: 1px solid #f5c6cb;">
       ❌ {{ request.query_params.get('reset_error') }}
     </div>
     {% endif %}
 
+    {# Mensajes de error para operaciones de eliminación #}
     {% if request.query_params.get('delete_error') %}
     <div class="error" style="background-color: #f8d7da; color: #721c24; padding: 10px; margin: 10px auto; max-width: 1200px; border-radius: 4px; border: 1px solid #f5c6cb;">
       ❌ {{ request.query_params.get('delete_error') }}
     </div>
     {% endif %}
-
-
 
     {# Contenido principal #}
     <main style="max-width: 1200px; margin: 0 auto; padding: 0 24px;">
@@ -95,11 +96,12 @@
         </form>
       </div>
 
-      {# Tabla de usuarios #}
+      {# Tabla de usuarios con información completa y acciones administrativas #}
       <div style="background: #2a2929; border-radius: 8px; overflow: hidden; border: 1px solid #444;">
         <table style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr style="background: #3a3939; border-bottom: 2px solid #4a7ba7;">
+              {# Tabla de usuarios con información completa y acciones administrativas #}
               <th style="padding: 12px; text-align: left; color: #87ceeb; font-weight: 600;">👤 Usuario</th>
               <th style="padding: 12px; text-align: left; color: #87ceeb; font-weight: 600;">🛡️ Rol</th>
               <th style="padding: 12px; text-align: center; color: #87ceeb; font-weight: 600;">🔐 Contraseña</th>
@@ -112,12 +114,14 @@
               <tr style="border-bottom: 1px solid #333;">
                 <td style="padding: 12px; color: #e0e0e0;">{{ usuario.nombre }}</td>
                 <td style="padding: 12px;">
+                  {# Rol con badge distintivo (admin = azul, user = gris) #}
                   {% if usuario.rol == 'admin' %}
                   <span style="background: #4a7ba7; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: 600;">ADMIN</span>
                   {% else %}
                   <span style="background: #666; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">USER</span>
                   {% endif %}
                 </td>
+                {# Estado de la contraseña (configurada o pendiente) #}
                 <td style="padding: 12px; text-align: center;">
                   {% if usuario.tiene_password %}
                   <span style="color: #4caf50;">✅ Configurada</span>
@@ -125,14 +129,19 @@
                   <span style="color: #ff9800;">⚠️ Sin configurar</span>
                   {% endif %}
                 </td>
+
+                {# Botones de acción: Resetear (todos) + Eliminar (solo users) #}
                 <td style="padding: 12px; text-align: center;">
                   <div style="display: flex; gap: 8px; justify-content: center;">
+                    {# Botón resetear: Disponible para todos los usuarios #}
                     <button 
                       style="padding: 6px 12px; background: #5a8bc7; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em;"
                       onclick="resetPassword('{{ usuario.nombre }}')"
                     >
                       🔑 Resetear
                     </button>
+
+                    {# Botón eliminar: Solo visible para usuarios regulares (protege admins) #}
                     {% if usuario.rol != 'admin' %}
                     <button 
                       style="padding: 6px 12px; background: #d32f2f; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em;"
@@ -146,6 +155,7 @@
               </tr>
               {% endfor %}
             {% else %}
+              {# Mensaje cuando no hay resultados #}
               <tr>
                 <td colspan="4" style="padding: 40px; text-align: center; color: #999;">
                   {% if search %}
@@ -190,24 +200,69 @@
     </main>
 
     <script>
+      /**
+       * Resetea la contraseña de un usuario a una temporal generada por el sistema.
+       * 
+       * Flujo:
+       * 1. Muestra diálogo de confirmación con información sobre la acción
+       * 2. Si se confirma, crea un formulario POST dinámicamente
+       * 3. Envía el formulario a /admin/reset-password con el nombre de usuario
+       * 4. El servidor genera una contraseña temporal y la devuelve
+       * 
+       * @param {string} username - Nombre del usuario cuya contraseña se va a resetear
+       * 
+       * @example
+       * resetPassword('juan');
+       * // Muestra confirmación → POST /admin/reset-password → Genera password temporal
+       * 
+       * @see POST /admin/reset-password en web.py
+       * @see POST /auth/reset-password en api_rest.py
+       */
       function resetPassword(username) {
         if (confirm(`¿Estás seguro de resetear la contraseña del usuario "${username}"?\n\nSe generará una contraseña temporal que deberás comunicarle al usuario.`)) {
           // Crear formulario y enviarlo
           const form = document.createElement('form');
           form.method = 'POST';
           form.action = '/admin/reset-password';
-          
+          // Añadir campo oculto con el nombre de usuario
           const input = document.createElement('input');
           input.type = 'hidden';
           input.name = 'username';
           input.value = username;
-          
+          // Añadir campo oculto con el token CSRF si es necesario
           form.appendChild(input);
           document.body.appendChild(form);
           form.submit();
         }
       }
 
+      /**
+       * Elimina permanentemente un usuario del sistema.
+       * 
+       * Implementa doble confirmación para prevenir eliminaciones accidentales:
+       * 1. Primer diálogo: Muestra advertencias sobre la irreversibilidad
+       * 2. Segundo prompt: Requiere escribir exactamente "ELIMINAR" para confirmar
+       * 
+       * Flujo:
+       * - Muestra advertencia inicial con detalles de la operación
+       * - Si acepta, solicita escribir "ELIMINAR" como confirmación
+       * - Solo si escribe exactamente "ELIMINAR" se procede con la eliminación
+       * - Crea formulario POST y lo envía a /admin/delete-user
+       * 
+       * @param {string} username - Nombre del usuario a eliminar
+       * 
+       * @example
+       * deleteUser('juan');
+       * // Confirmación 1 → Prompt "ELIMINAR" → POST /admin/delete-user → Usuario eliminado
+       * 
+       * @security
+       * - Solo usuarios con rol 'user' pueden ser eliminados (admins protegidos en HTML)
+       * - Requiere confirmación explícita escribiendo "ELIMINAR"
+       * - Valida coincidencia exacta (case-sensitive)
+       * 
+       * @see POST /admin/delete-user en web.py
+       * @see DELETE /usuarios/{nombre} en api_rest.py
+       */
       function deleteUser(username) {
         if (confirm(`⚠️ ADVERTENCIA ⚠️\n\n¿Estás COMPLETAMENTE SEGURO de eliminar el usuario "${username}"?\n\nEsta acción:\n• Es IRREVERSIBLE\n• Eliminará PERMANENTEMENTE el usuario\n• No se puede deshacer\n\nEscribe "ELIMINAR" para confirmar.`)) {
           const confirmText = prompt('Escribe "ELIMINAR" para confirmar:');
@@ -216,12 +271,12 @@
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = '/admin/delete-user';
-            
+            // Añadir campo oculto con el nombre de usuario
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = 'username';
             input.value = username;
-            
+            // Añadir campo oculto con el token CSRF si es necesario
             form.appendChild(input);
             document.body.appendChild(form);
             form.submit();

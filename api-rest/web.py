@@ -559,6 +559,7 @@ async def admin_users(request: Request, page: int = 1, search: str = None):
                 "user": user,
                 "usuarios": [],
                 "pagination": {},
+                "search": search or "",
                 "error": "Error al obtener usuarios"
             }
         )
