@@ -255,10 +255,14 @@
         // Cerrar menú de administración
         closeAdminMenu();
         
-        // Cerrar todos los formularios administrativos
-        document.getElementById('create-user-form').style.display = 'none';
-        document.getElementById('create-task-form').style.display = 'none';
-        document.getElementById('users-list-container').style.display = 'none';
+        // Cerrar todos los formularios administrativos (solo si existen)
+        var createUserForm = document.getElementById('create-user-form');
+        var createTaskForm = document.getElementById('create-task-form');
+        var usersListContainer = document.getElementById('users-list-container');
+        
+        if (createUserForm) createUserForm.style.display = 'none';
+        if (createTaskForm) createTaskForm.style.display = 'none';
+        if (usersListContainer) usersListContainer.style.display = 'none';
         
         var form = document.getElementById('password-form');
         var errorMsg = document.getElementById('password-error');
