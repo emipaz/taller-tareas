@@ -1873,13 +1873,14 @@ async def eliminar_tarea(
     """
     try:
         # Buscar la tarea
-        tarea = buscar_tarea_por_nombre(gestor_sistema, nombre)
+        tareas = gestor_sistema.cargar_tareas()
+        tarea = buscar_tarea_por_nombre(tareas, nombre)
         
         if not tarea:
             raise HTTPException(status_code=400, detail=f"Tarea '{nombre}' no encontrada")
         
         # Verificar que esté finalizada
-        if not tarea.finalizada:
+        if not tarea.esta_finalizada():
             raise HTTPException(
                 status_code=400,
                 detail=f"La tarea '{nombre}' debe estar finalizada para poder eliminarse"
@@ -1931,20 +1932,27 @@ async def reactivar_tarea(
         HTTPException: 500 para errores internos.
     """
     try:
-        tarea = buscar_tarea_por_nombre(gestor_sistema, nombre)
+        logger.info(f"Intentando reactivar tarea: {nombre}")
+        tareas = gestor_sistema.cargar_tareas()
+        tarea = buscar_tarea_por_nombre(tareas, nombre)
         
         if not tarea:
+            logger.warning(f"Tarea no encontrada: {nombre}")
             raise HTTPException(status_code=400, detail=f"Tarea '{nombre}' no encontrada")
         
-        if not tarea.finalizada:
+        logger.debug(f"Tarea encontrada, verificando estado: esta_finalizada={tarea.esta_finalizada()}")
+        if not tarea.esta_finalizada():
+            logger.warning(f"Tarea '{nombre}' no está finalizada, no se puede reactivar")
             raise HTTPException(
                 status_code=400,
                 detail=f"La tarea '{nombre}' no está finalizada"
             )
         
         # Reactivar la tarea
-        tarea.finalizada = False
-        gestor_sistema.guardar_tareas()
+        logger.info(f"Reactivando tarea: {nombre}")
+        tarea.activar_tarea()
+        gestor_sistema.guardar_tareas(tareas)
+        logger.info(f"Tarea '{nombre}' reactivada exitosamente")
         
         return BaseResponse(
             success=True,
@@ -1953,75 +1961,7 @@ async def reactivar_tarea(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.put("/tareas/comentario/{tarea_nombre}/{comentario_index}", response_model=BaseResponse)
-async def editar_comentario(
-    tarea_nombre: str,
-    comentario_index: int,
-    nuevo_texto: dict,
-    current_user: TokenData = Depends(get_current_user),
-    gestor_sistema: GestorSistema = Depends(get_gestor)
-):
-    """Edita un comentario existente en una tarea.
-    
-    Permite a los usuarios editar sus propios comentarios en una tarea.
-    Solo el autor del comentario puede editarlo.
-    
-    **Autenticación requerida:** Token JWT válido.
-    
-    **Parámetros:**
-        tarea_nombre: Nombre de la tarea.
-        comentario_index: Índice del comentario a editar (0-based).
-        nuevo_texto: Dict con key 'texto' conteniendo el nuevo texto.
-        current_user: Usuario autenticado.
-        gestor_sistema: Instancia del gestor.
-        
-    **Retorna:**
-        BaseResponse: Confirmación de edición exitosa.
-        
-    **Errores:**
-        HTTPException: 400 si la tarea o comentario no existe.
-        HTTPException: 403 si el usuario no es el autor del comentario.
-        HTTPException: 500 para errores internos.
-    """
-    try:
-        tarea = buscar_tarea_por_nombre(gestor_sistema, tarea_nombre)
-        
-        if not tarea:
-            raise HTTPException(status_code=400, detail=f"Tarea '{tarea_nombre}' no encontrada")
-        
-        if comentario_index < 0 or comentario_index >= len(tarea.comentarios):
-            raise HTTPException(status_code=400, detail="Índice de comentario inválido")
-        
-        comentario = tarea.comentarios[comentario_index]
-        
-        # Verificar que el usuario sea el autor del comentario
-        if comentario.get('usuario') != current_user.nombre:
-            raise HTTPException(
-                status_code=403,
-                detail="Solo puedes editar tus propios comentarios"
-            )
-        
-        # Editar el comentario
-        texto_nuevo = nuevo_texto.get('texto', '').strip()
-        if not texto_nuevo:
-            raise HTTPException(status_code=400, detail="El comentario no puede estar vacío")
-        
-        tarea.comentarios[comentario_index]['texto'] = texto_nuevo
-        tarea.comentarios[comentario_index]['editado'] = True
-        tarea.comentarios[comentario_index]['fecha_edicion'] = datetime.now().isoformat()
-        
-        gestor_sistema.guardar_tareas()
-        
-        return BaseResponse(
-            success=True,
-            message=f"Comentario editado exitosamente"
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
+        logger.error(f"Error al reactivar tarea '{nombre}': {type(e).__name__}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

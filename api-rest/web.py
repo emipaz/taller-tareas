@@ -940,36 +940,6 @@ async def agregar_comentario_web(request: Request):
         return JSONResponse(resp_json, status_code=resp.status_code)
 
 
-@router.put("/web/tareas/comentario/{tarea_nombre}/{comentario_index}")
-@token_required
-async def editar_comentario_web(
-    request: Request,
-    tarea_nombre: str,
-    comentario_index: int
-):
-    """Editar un comentario existente desde la interfaz web."""
-    res = _get_api_client_headers_user(request)
-    if not res:
-        return JSONResponse({"detail": "No autorizado"}, status_code=401)
-    
-    client, headers, user = res
-    
-    # Obtener datos del formulario JSON
-    data = await request.json()
-    
-    # Llamar a la API interna
-    resp = client.put(
-        f"/tareas/comentario/{tarea_nombre}/{comentario_index}",
-        headers=headers,
-        json=data
-    )
-    
-    if resp.status_code == 200:
-        return JSONResponse(resp.json())
-    else:
-        return JSONResponse(resp.json(), status_code=resp.status_code)
-
-
 @router.post("/web/tareas/asignar")
 @token_required
 async def asignar_usuario_web(request: Request):
