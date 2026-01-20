@@ -47,6 +47,7 @@ El módulo usa el patrón proxy:
 ### Acciones sobre Tareas (6) - Prefijo /web/
 - POST   /web/tareas/comentario         # Agregar comentario (HTMX)
 - POST   /web/tareas/asignar            # Asignar usuario a tarea (HTMX)
+- POST   /web/tareas/desasignar_usuario  # Quitar usuario de tarea (HTMX)
 - POST   /web/tareas/desasignar         # Quitar usuario de tarea (admin, HTMX)
 - POST   /web/tareas/finalizar          # Finalizar tarea (admin)
 - PUT    /web/tareas/{nombre}/reactivar # Reactivar tarea (admin, HTMX)

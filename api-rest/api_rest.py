@@ -1,33 +1,227 @@
 """API REST para el sistema de gestión de tareas.
 
-Esta API proporciona endpoints RESTful para interactuar con el sistema
-de gestión de tareas, usuarios y autenticación usando FastAPI.
+Este módulo implementa la API REST completa del sistema usando FastAPI,
+proporcionando endpoints para gestión de usuarios, tareas, autenticación JWT,
+y sirviendo la interfaz web HTML mediante Jinja2.
 
-FastAPI es un framework web moderno y de alto rendimiento para construir APIs
-con Python basado en estándares como OpenAPI y JSON Schema. Ofrece:
+## Arquitectura Dual
 
-- Validación automática de datos usando type hints de Python
-- Documentación automática interactiva (Swagger UI)
-- Alto rendimiento comparable a NodeJS y Go
-- Soporte nativo para async/await
-- Integración automática con Pydantic para serialización
+El sistema combina dos interfaces:
+1. **API REST JSON** - Endpoints `/api/*`, `/tareas/*`, `/auth/*` para clientes externos
+2. **Interfaz Web HTML** - Endpoints `/`, `/dashboard`, `/web/*` usando Jinja2 + HTMX
 
-Arquitectura:
-    La API actúa como una capa de interfaz HTTP sobre la lógica de negocio
-    existente en GestorSistema. Esto permite:
-    - Reutilizar código existente sin modificaciones
-    - Mantener separación entre lógica de negocio y presentación  
-    - Facilitar testing y mantenimiento
-    - Posibilitar múltiples interfaces (CLI, API, GUI) sobre la misma lógica
+Ambas interfaces comparten:
+- Misma lógica de negocio (GestorSistema)
+- Misma autenticación JWT (RS256)
+- Mismos modelos de datos (Pydantic)
 
-Endpoints principales:
-    - Sistema  : Health check, estadísticas
-    - Usuarios : CRUD completo, autenticación
-    - Tareas   : Gestión completa, asignaciones, comentarios
+## Stack Tecnológico
 
-Attributes:
-    app    : Instancia principal de FastAPI
-    gestor : Instancia del gestor de sistema (lógica de negocio)
+### Backend
+- **FastAPI** - Framework ASGI moderno con validación automática
+- **Uvicorn** - Servidor ASGI de alto rendimiento
+- **Pydantic** - Validación y serialización con type hints
+- **httpx** - Cliente HTTP para TestClient
+
+### Autenticación
+- **PyJWT** - Tokens JWT con algoritmo RS256 (asimétrico)
+- **cryptography** - Generación automática de llaves RSA
+- **passlib[bcrypt]** - Hashing seguro de contraseñas
+- **HttpOnly cookies** - Almacenamiento seguro en navegador
+
+### Interfaz Web
+- **Jinja2** - Templates server-side con herencia
+- **HTMX** - Interactividad dinámica sin JavaScript complejo
+- **CSS3** - Estilos modernos con variables y flexbox
+
+## Endpoints (45 total)
+
+### API REST - JSON (25 endpoints)
+
+#### Sistema (3)
+- GET  /api              # Información de la API
+- GET  /api/health       # Health check
+- GET  /stats            # Estadísticas (🔐 auth)
+
+#### Usuarios (5)
+- GET    /usuarios            # Listar con paginación (🔐 auth)
+- GET    /usuarios/{nombre}   # Usuario específico (🔐 auth)
+- POST   /usuarios            # Crear usuario (🔐 auth)
+- POST   /usuarios/admin      # Crear primer admin (público)
+- DELETE /usuarios/{nombre}   # Eliminar usuario (🔐 admin)
+
+#### Autenticación JWT (7)
+- POST /auth/login            # Login → access + refresh tokens
+- POST /auth/refresh          # Renovar access_token
+- POST /auth/logout           # Invalidar tokens (🔐 auth)
+- GET  /auth/me               # Usuario actual (🔐 auth)
+- POST /auth/set-password     # Primera contraseña
+- POST /auth/change-password  # Cambiar contraseña (🔐 auth)
+- POST /auth/reset-password   # Resetear contraseña (🔐 admin)
+
+#### Tareas (10)
+- GET    /tareas                     # Listar todas (🔐 auth)
+- GET    /tareas/{nombre}            # Tarea específica (🔐 auth)
+- GET    /tareas/usuario/{nombre}    # Tareas de usuario (🔐 auth)
+- POST   /tareas                     # Crear tarea (🔐 auth)
+- POST   /tareas/asignar             # Asignar usuario (🔐 auth)
+- POST   /tareas/desasignar          # Quitar usuario (🔐 admin)
+- POST   /tareas/finalizar           # Finalizar tarea (🔐 auth)
+- POST   /tareas/comentario          # Agregar comentario (🔐 auth)
+- PUT    /tareas/{nombre}/reactivar  # Reactivar (🔐 admin)
+- DELETE /tareas/{nombre}            # Eliminar (🔐 admin)
+
+### Interfaz Web - HTML (20 endpoints)
+
+#### Páginas (6)
+- GET /                          # Landing con login
+- GET /dashboard                 # Dashboard principal (🔐 auth)
+- GET /tareas/lista              # Lista filtrable (🔐 auth)
+- GET /tareas/detalle/{nombre}   # Detalle completo (🔐 auth)
+- GET /admin/users               # Panel admin usuarios (🔐 admin)
+- GET /admin/stats               # Estadísticas (🔐 admin)
+
+#### Autenticación Web (4)
+- POST /login                    # Login (cookies HttpOnly)
+- POST /set-password             # Primera contraseña
+- POST /change-password          # Cambiar contraseña (🔐 auth)
+- GET  /logout                   # Cerrar sesión
+
+#### Administración (4)
+- POST /admin/create-user        # Crear usuario (🔐 admin)
+- POST /admin/reset-password     # Resetear contraseña (🔐 admin)
+- POST /admin/delete-user        # Eliminar usuario (🔐 admin)
+- POST /admin/create-task        # Crear tarea (🔐 admin)
+
+#### Acciones Tareas HTMX (6) - Prefijo /web/
+- POST   /web/tareas/comentario         # Agregar comentario (🔐 auth)
+- POST   /web/tareas/asignar            # Asignar usuario (🔐 auth)
+- POST   /web/tareas/desasignar         # Quitar usuario (🔐 admin)
+- POST   /web/tareas/finalizar          # Finalizar tarea (🔐 auth)
+- PUT    /web/tareas/{nombre}/reactivar # Reactivar (🔐 admin)
+- DELETE /web/tareas/{nombre}           # Eliminar (🔐 admin)
+
+## Características Principales
+
+### Validación Automática
+FastAPI + Pydantic validan automáticamente todos los requests:
+- Type hints de Python
+- Modelos Pydantic con validadores
+- Respuestas 422 automáticas para datos inválidos
+
+### Documentación Interactiva
+- **Swagger UI**: http://localhost:8000/docs (modo oscuro)
+- **ReDoc**: http://localhost:8000/redoc (alternativa)
+- **OpenAPI JSON**: http://localhost:8000/openapi.json
+
+### Seguridad
+- JWT con RS256 (asimétrico)
+- Cookies HttpOnly (protección XSS)
+- Bcrypt para contraseñas
+- CORS configurado
+- Validación estricta de entrada
+
+### CORS Configuration
+Orígenes permitidos para desarrollo:
+- http://localhost:3000 (React)
+- http://localhost:8080 (Vue)
+- http://localhost:5173 (Vite)
+
+## Modelos de Datos
+
+Definidos en `api_models.py`:
+- BaseResponse, ErrorResponse, HealthResponse
+- UsuarioCreate, UsuarioResponse, UsuarioListPaginatedResponse
+- TareaCreate, TareaResponse, TareaListResponse
+- AsignarUsuarioRequest, ComentarioRequest, FinalizarTareaRequest
+- EstadisticasResponse, PaginationMeta, FilterMeta
+
+## Dependencias Inyectables
+
+### get_gestor()
+Retorna instancia de GestorSistema para acceder a la lógica de negocio.
+
+### get_current_user()
+Valida token JWT, retorna TokenData. Uso: endpoints que requieren auth.
+
+### get_current_admin()
+Valida token JWT + rol admin. Uso: endpoints administrativos.
+
+## Logging
+
+Logger: "api_rest"
+- INFO: Operaciones normales, requests exitosos
+- DEBUG: Detalles de paginación, filtros, validaciones
+- WARNING: Intentos fallidos, datos inválidos
+- ERROR: Excepciones, errores internos
+
+## Integración con web.py
+
+El módulo `web.py` se registra como router:
+```python
+from web import router as web_router
+app.include_router(web_router)
+```
+
+web.py usa TestClient para llamar internamente a estos endpoints,
+convirtiendo cookies HttpOnly en Authorization headers.
+
+## Uso
+
+Ejecutar directamente:
+```bash
+python api.py
+# o
+python api-rest/api_rest.py
+```
+
+Importar como módulo:
+```python
+from api_rest import app
+import uvicorn
+uvicorn.run(app, host="0.0.0.0", port=8000)
+```
+
+## Estructura de Respuestas
+
+### Éxito
+```json
+{
+  "success": true,
+  "message": "Operación exitosa",
+  "data": {...}
+}
+```
+
+### Error
+```json
+{
+  "detail": "Mensaje de error",
+  "error_code": "HTTP_400"
+}
+```
+
+### Paginación
+```json
+{
+  "usuarios": [...],
+  "pagination": {
+    "current_page": 1,
+    "per_page": 10,
+    "total_items": 50,
+    "total_pages": 5
+  }
+}
+```
+
+## Testing
+
+Ver `tests/` para:
+- test_jwt_integration.py (tests JWT)
+- test_jwt_unit.py (tests unitarios)
+- test_api_endpoints_unit.py (tests API)
+- test_api_client.py (cliente de pruebas)
+- test_api_endpoints.ipynb (notebook interactivo)
 """
 
 import os
@@ -89,53 +283,10 @@ from api_models import (
 # CONFIGURACIÓN DE LA APLICACIÓN
 # ================================
 
-# Crear instancia principal de FastAPI con metadatos y personalización UI
+# Crear instancia principal de FastAPI
 app = FastAPI(
-    title       = "Sistema de Gestión de Tareas",
-    description = """API REST completa para gestión de tareas y usuarios.
-
-## 🌟 Características
-
-* **👥 Usuarios**: Creación, autenticación, gestión de contraseñas
-* **📋 Tareas**: CRUD completo, asignaciones, comentarios, finalización
-* **📊 Estadísticas**: Métricas del sistema en tiempo real
-* **📚 Documentación**: Automática e interactiva con modo oscuro
-* **🔐 JWT Auth**: Autenticación segura con tokens RSA256
-* **📄 Paginación**: Soporte completo para datasets grandes
-
-## 🔑 Autenticación
-
-El sistema maneja dos tipos de usuarios:
-- **🛡️ Admin**: Puede crear usuarios, resetear contraseñas, acceso completo
-- **👤 User**: Puede gestionar tareas asignadas, cambiar su propia contraseña
-
-## 🚀 Flujo típico
-
-1. Crear administrador (primera vez)
-2. Admin crea usuarios estándar  
-3. Usuarios establecen sus contraseñas
-4. Crear y asignar tareas
-5. Usuarios agregan comentarios y progresan
-6. Finalizar tareas completadas
-
-## 🎨 Personalización UI
-
-- **🌙 Modo Oscuro**: Interfaz oscura para mejor experiencia
-- **📱 Responsive**: Funciona perfectamente en móviles y tablets
-- **⚡ Rápida**: Interfaz optimizada para velocidad""",
-    version     = "1.0.0",
-    contact = {
-        "name": "Sistema de Gestión de Tareas",
-        "url": "http://localhost:8000",
-        "email": "admin@tareas.local"
-    },
-    license_info = {
-        "name": "MIT License",
-        "url": "https://opensource.org/licenses/MIT"
-    },
-    docs_url    = "/docs",        # Documentación Swagger UI estándar
-    redoc_url   = "/redoc",       # Documentación ReDoc estándar
-    openapi_url = "/openapi.json" # Esquema OpenAPI
+    title="Sistema de Gestión de Tareas",
+    version="1.0.0"
 )
 
 # Configurar CORS (Cross-Origin Resource Sharing)
@@ -151,6 +302,11 @@ app.add_middleware(
 # Instancia del gestor del sistema (lógica de negocio)
 # Esta es la única instancia que maneja el estado del sistema
 gestor = GestorSistema()
+
+
+# ================================
+# ARCHIVOS ESTÁTICOS Y RUTAS WEB
+# ================================
 
 # Montar carpeta static (si existe) y registrar rutas web separadas
 try:
@@ -2093,9 +2249,17 @@ def main():
         ```
     """
     print("🚀 Iniciando API del Sistema de Gestión de Tareas...")
-    print("📚 Documentación en modo oscuro: http://localhost:8000/docs")
-    print("🔄 Documentación ReDoc: http://localhost:8000/redoc")
-    print("⚡ Health check: http://localhost:8000/health")
+    print()
+    print("🌐 INTERFAZ WEB:")
+    print("   👉 http://localhost:8000/          - Landing page con login")
+    print("   📊 http://localhost:8000/dashboard - Dashboard principal")
+    print("   👥 http://localhost:8000/admin/users - Panel de administración")
+    print()
+    print("📚 DOCUMENTACIÓN API:")
+    print("   📖 http://localhost:8000/docs   - Swagger UI (modo oscuro)")
+    print("   📘 http://localhost:8000/redoc  - ReDoc (alternativa)")
+    print("   ⚡ http://localhost:8000/api/health - Health check")
+    print()
     print("💡 Para parar el servidor: Ctrl+C")
     print()
     print("🔧 Configuración del servidor:")
