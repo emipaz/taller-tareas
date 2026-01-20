@@ -16,15 +16,39 @@
   <ul>
   {# Iterar sobre todas las tareas #}
   {% for tarea in tareas %}
-    {# Cada tarea se muestra como un item de lista #}
+    {# Cada tarea se muestra como un item de lista con enlace a detalles #}
     <li class="tarea-item">
-      <strong>{{ tarea.nombre }}</strong>
+      <div class="tarea-header">
+        <strong class="tarea-titulo">
+          <a href="/tareas/detalle/{{ tarea.nombre }}" class="tarea-link">
+            📋 {{ tarea.nombre }}
+          </a>
+        </strong>
+        {% if tarea.finalizada %}
+        <span class="tarea-badge badge-finalizada">✓ Finalizada</span>
+        {% else %}
+        <span class="tarea-badge badge-activa">🔄 Activa</span>
+        {% endif %}
+      </div>
       <div class="desc">{{ tarea.descripcion }}</div>
-      <div class="meta">Estado: {{ tarea.estado }}{% if tarea.usuarios_asignados %} · Asignados: {{ tarea.usuarios_asignados|join(', ') }}{% endif %}</div>
+      <div class="meta">
+        <span>📅 {{ tarea.fecha_creacion }}</span>
+        {% if tarea.usuarios_asignados %}
+        <span>👥 {{ tarea.usuarios_asignados|join(', ') }}</span>
+        {% else %}
+        <span style="color: #ff9800;">⚠️ Sin asignar</span>
+        {% endif %}
+        <span>💬 {{ tarea.comentarios|length }} comentario(s)</span>
+      </div>
+      <div class="tarea-actions">
+        <a href="/tareas/detalle/{{ tarea.nombre }}" class="btn-ver-detalles">
+          🔍 Ver Detalles
+        </a>
+      </div>
     </li>
   {% else %}
     {# Mensaje cuando no hay tareas #}
-    <li>No hay tareas aún.</li>
+    <li class="no-tareas">📭 No hay tareas aún.</li>
   {% endfor %}
   </ul>
 </div>

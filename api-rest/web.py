@@ -12,8 +12,8 @@ para consumir los endpoints de la API interna y obtener información de
 usuario y tareas.
 """
 
-from fastapi import APIRouter, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Request, Form 
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates  # depende de jinja2 pip install jinja2
 import os
 
@@ -799,4 +799,274 @@ def tareas_lista(request: Request):
     client, headers, user = res
     tareas = _get_tareas_for_user(client, headers, user)
     return templates.TemplateResponse("_tareas_fragment.html", {"request": request, "tareas": tareas})
+
+@router.get("/tareas/detalle/{nombre_tarea}", response_class=HTMLResponse)
+@token_required
+async def tarea_detalle(
+    request: Request,
+    nombre_tarea: str,
+    usuario_filter: str = None,
+    fecha_desde: str = None,
+    fecha_hasta: str = None
+):
+    """Muestra la vista detallada de una tarea específica.
+    
+    Incluye información completa de la tarea, historial de comentarios
+    con capacidad de filtrado, y funciones administrativas si el usuario
+    es admin.
+    
+    Args:
+        request (Request): Petición entrante.
+        nombre_tarea (str): Nombre de la tarea a mostrar.
+        usuario_filter (str, opcional): Filtrar comentarios por usuario.
+        fecha_desde (str, opcional): Filtrar comentarios desde fecha.
+        fecha_hasta (str, opcional): Filtrar comentarios hasta fecha.
+        
+    Returns:
+        TemplateResponse: Vista detallada de la tarea.
+    """
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return RedirectResponse(url='/', status_code=303)
+
+    client, headers, user = res
+    
+    # Obtener detalles de la tarea
+    resp_tarea = client.get(f"/tareas/{nombre_tarea}", headers=headers)
+    
+    if resp_tarea.status_code != 200:
+        return RedirectResponse(url='/', status_code=303)
+    
+    tarea = resp_tarea.json()
+    
+    # Obtener todos los usuarios para el filtro y asignación (solo admin)
+    usuarios = []
+    if user.get("rol") == "admin":
+        resp_usuarios = client.get("/usuarios", params={"limit": 1000}, headers=headers)
+        if resp_usuarios.status_code == 200:
+            usuarios_data = resp_usuarios.json()
+            usuarios = usuarios_data.get("usuarios", [])
+    
+    # Filtrar comentarios si se proporcionan filtros
+    comentarios = tarea.get("comentarios", [])
+    comentarios_filtrados = comentarios.copy()
+    
+    # Aplicar filtros
+    if usuario_filter:
+        comentarios_filtrados = [
+            c for c in comentarios_filtrados 
+            if c.get("usuario", "").lower() == usuario_filter.lower()
+        ]
+    
+    if fecha_desde:
+        try:
+            from datetime import datetime
+            fecha_desde_dt = datetime.fromisoformat(fecha_desde.replace('Z', '+00:00'))
+            comentarios_filtrados = [
+                c for c in comentarios_filtrados
+                if datetime.fromisoformat(c.get("fecha", "").replace('Z', '+00:00')) >= fecha_desde_dt
+            ]
+        except:
+            pass
+    
+    if fecha_hasta:
+        try:
+            from datetime import datetime
+            fecha_hasta_dt = datetime.fromisoformat(fecha_hasta.replace('Z', '+00:00'))
+            comentarios_filtrados = [
+                c for c in comentarios_filtrados
+                if datetime.fromisoformat(c.get("fecha", "").replace('Z', '+00:00')) <= fecha_hasta_dt
+            ]
+        except:
+            pass
+    
+    # Ordenar por fecha (más recientes primero)
+    comentarios_filtrados.sort(
+        key=lambda x: x.get("fecha", ""),
+        reverse=True
+    )
+    
+    return templates.TemplateResponse(
+        "task_detail.html",
+        {
+            "request": request,
+            "user": user,
+            "tarea": tarea,
+            "comentarios": comentarios_filtrados,
+            "usuarios": usuarios,
+            "usuario_filter": usuario_filter,
+            "fecha_desde": fecha_desde,
+            "fecha_hasta": fecha_hasta
+        }
+    )
+
+
+# ================================
+# ENDPOINTS DE ACCIÓN SOBRE TAREAS
+# ================================
+
+@router.post("/web/tareas/comentario")
+@token_required
+async def agregar_comentario_web(request: Request):
+    """Agregar comentario a una tarea desde la interfaz web."""
+    res = _get_api_client_headers_user(request)
+    if not res:
+        logger.warning("agregar_comentario_web: No se pudo autenticar usuario")
+        return JSONResponse({"detail": "No autorizado"}, status_code=401)
+    
+    client, headers, user = res
+    
+    # Obtener datos del formulario JSON
+    data = await request.json()
+    logger.info(f"agregar_comentario_web: Usuario {user.get('nombre')} ({user.get('rol')}) agregando comentario a '{data.get('nombre_tarea')}'")
+    logger.debug(f"agregar_comentario_web: Payload completo: {data}")
+    
+    # Llamar a la API interna
+    resp = client.post("/tareas/comentario", headers=headers, json=data)
+    logger.debug(f"agregar_comentario_web: Respuesta API status={resp.status_code}")
+    
+    try:
+        resp_json = resp.json()
+        logger.debug(f"agregar_comentario_web: Respuesta body={resp_json}")
+    except Exception as e:
+        logger.error(f"agregar_comentario_web: Error parseando respuesta JSON: {e}")
+        return JSONResponse({"detail": "Error interno del servidor"}, status_code=500)
+    
+    if resp.status_code == 200:
+        logger.info(f"agregar_comentario_web: Comentario agregado exitosamente")
+        return JSONResponse(resp_json)
+    else:
+        logger.warning(f"agregar_comentario_web: Error al agregar comentario: {resp_json}")
+        return JSONResponse(resp_json, status_code=resp.status_code)
+
+
+@router.put("/web/tareas/comentario/{tarea_nombre}/{comentario_index}")
+@token_required
+async def editar_comentario_web(
+    request: Request,
+    tarea_nombre: str,
+    comentario_index: int
+):
+    """Editar un comentario existente desde la interfaz web."""
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return JSONResponse({"detail": "No autorizado"}, status_code=401)
+    
+    client, headers, user = res
+    
+    # Obtener datos del formulario JSON
+    data = await request.json()
+    
+    # Llamar a la API interna
+    resp = client.put(
+        f"/tareas/comentario/{tarea_nombre}/{comentario_index}",
+        headers=headers,
+        json=data
+    )
+    
+    if resp.status_code == 200:
+        return JSONResponse(resp.json())
+    else:
+        return JSONResponse(resp.json(), status_code=resp.status_code)
+
+
+@router.post("/web/tareas/asignar")
+@token_required
+async def asignar_usuario_web(request: Request):
+    """Asignar usuario a una tarea desde la interfaz web."""
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return JSONResponse({"detail": "No autorizado"}, status_code=401)
+    
+    client, headers, user = res
+    
+    # Verificar que sea admin
+    if user.get("rol") != "admin":
+        return JSONResponse({"detail": "Acceso denegado"}, status_code=403)
+    
+    # Obtener datos del formulario JSON
+    data = await request.json()
+    
+    # Llamar a la API interna
+    resp = client.post("/tareas/asignar", headers=headers, json=data)
+    
+    if resp.status_code == 200:
+        return JSONResponse(resp.json())
+    else:
+        return JSONResponse(resp.json(), status_code=resp.status_code)
+
+
+@router.post("/web/tareas/finalizar")
+@token_required
+async def finalizar_tarea_web(request: Request):
+    """Finalizar una tarea desde la interfaz web."""
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return RedirectResponse(url='/', status_code=303)
+    
+    client, headers, user = res
+    
+    # Verificar que sea admin
+    if user.get("rol") != "admin":
+        return RedirectResponse(url='/', status_code=303)
+    
+    # Obtener datos del formulario
+    form_data = await request.form()
+    nombre_tarea = form_data.get("nombre_tarea")
+    
+    # Llamar a la API interna
+    resp = client.post(
+        "/tareas/finalizar",
+        headers=headers,
+        json={"nombre_tarea": nombre_tarea}
+    )
+    
+    # Redirigir de vuelta a la vista de detalle
+    return RedirectResponse(url=f'/tareas/detalle/{nombre_tarea}', status_code=303)
+
+
+@router.put("/web/tareas/{nombre_tarea}/reactivar")
+@token_required
+async def reactivar_tarea_web(request: Request, nombre_tarea: str):
+    """Reactivar una tarea finalizada desde la interfaz web."""
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return JSONResponse({"detail": "No autorizado"}, status_code=401)
+    
+    client, headers, user = res
+    
+    # Verificar que sea admin
+    if user.get("rol") != "admin":
+        return JSONResponse({"detail": "Acceso denegado"}, status_code=403)
+    
+    # Llamar a la API interna
+    resp = client.put(f"/tareas/{nombre_tarea}/reactivar", headers=headers)
+    
+    if resp.status_code == 200:
+        return JSONResponse(resp.json())
+    else:
+        return JSONResponse(resp.json(), status_code=resp.status_code)
+
+
+@router.delete("/web/tareas/{nombre_tarea}")
+@token_required
+async def eliminar_tarea_web(request: Request, nombre_tarea: str):
+    """Eliminar una tarea finalizada desde la interfaz web."""
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return JSONResponse({"detail": "No autorizado"}, status_code=401)
+    
+    client, headers, user = res
+    
+    # Verificar que sea admin
+    if user.get("rol") != "admin":
+        return JSONResponse({"detail": "Acceso denegado"}, status_code=403)
+    
+    # Llamar a la API interna
+    resp = client.delete(f"/tareas/{nombre_tarea}", headers=headers)
+    
+    if resp.status_code == 200:
+        return JSONResponse(resp.json())
+    else:
+        return JSONResponse(resp.json(), status_code=resp.status_code)
 

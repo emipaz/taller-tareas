@@ -1812,6 +1812,9 @@ async def agregar_comentario(
         Use GET /tareas/{nombre} para ver el historial completo.
     """
     try:
+        # Log para debugging
+        logging.info(f"Agregar comentario - Tarea: {comentario_data.nombre_tarea}, Usuario: {comentario_data.nombre_usuario}, Autenticado como: {current_user.username}")
+        
         exito, mensaje = gestor_sistema.agregar_comentario_tarea(
             comentario_data.nombre_tarea,
             comentario_data.comentario,
@@ -1819,12 +1822,15 @@ async def agregar_comentario(
         )
         
         if not exito:
+            logging.warning(f"Fallo al agregar comentario: {mensaje}")
             raise HTTPException(status_code=400, detail=mensaje)
         
+        logging.info(f"Comentario agregado exitosamente por {comentario_data.nombre_usuario}")
         return BaseResponse(success=True, message=mensaje)
     except HTTPException:
         raise
     except Exception as e:
+        logging.error(f"Error inesperado al agregar comentario: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1850,45 +1856,169 @@ async def eliminar_tarea(
         BaseResponse: Confirmación de eliminación exitosa.
         
     **Errores:**
+        HTTPException: 400 si la tarea no existe.
+        HTTPException: 400 si la tarea no está finalizada.
         HTTPException: 403 si el usuario no es administrador.
-        HTTPException: 400 si la tarea no existe o no está finalizada.
         HTTPException: 500 para errores internos del servidor.
         
     **Ejemplo de uso:**
         ```bash
-        curl -X DELETE "http://localhost:8000/tareas/tarea-obsoleta" \\
-             -H "Authorization: Bearer admin_access_token_aqui"
+        curl -X DELETE http://localhost:8000/tareas/tarea-antigua \\
+             -H "Authorization: Bearer tu_access_token_de_admin"
         ```
-        
-        
-        **Respuesta:**
-        ```json
-        {
-            "success": true,
-            "message": "Tarea 'tarea-obsoleta' eliminada permanentemente del sistema"
-        }
-        ```
-        
-    **🔐 Restricciones:**
-        - Solo administradores pueden usar este endpoint
-        - Solo se pueden eliminar tareas que estén finalizadas
-        - La operación es irreversible y permanente
         
     **⚠️ Advertencia:**
-        Esta acción elimina permanentemente la tarea del historial.
-        Use con precaución ya que no hay manera de recuperar la información.
-        
-    **Nota:**
-        Para verificar que una tarea está finalizada, use GET /tareas/{nombre}
-        y confirme que "esta_finalizada" es true.
+        Esta operación es IRREVERSIBLE. La tarea se elimina permanentemente.
+        Solo se pueden eliminar tareas que ya estén finalizadas.
     """
     try:
-        exito, mensaje = gestor_sistema.eliminar_tarea(nombre)
+        # Buscar la tarea
+        tarea = buscar_tarea_por_nombre(gestor_sistema, nombre)
+        
+        if not tarea:
+            raise HTTPException(status_code=400, detail=f"Tarea '{nombre}' no encontrada")
+        
+        # Verificar que esté finalizada
+        if not tarea.finalizada:
+            raise HTTPException(
+                status_code=400,
+                detail=f"La tarea '{nombre}' debe estar finalizada para poder eliminarse"
+            )
+        
+        # Eliminar la tarea
+        exito = gestor_sistema.eliminar_tarea_finalizada(nombre)
         
         if not exito:
-            raise HTTPException(status_code=400, detail=mensaje)
+            raise HTTPException(
+                status_code=400,
+                detail=f"No se pudo eliminar la tarea '{nombre}'"
+            )
         
-        return BaseResponse(success=True, message=mensaje)
+        return BaseResponse(
+            success=True,
+            message=f"Tarea '{nombre}' eliminada permanentemente"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/tareas/{nombre}/reactivar", response_model=BaseResponse)
+async def reactivar_tarea(
+    nombre: str,
+    current_user: TokenData = Depends(get_current_admin),
+    gestor_sistema: GestorSistema = Depends(get_gestor)
+):
+    """Reactiva una tarea finalizada (solo administradores).
+    
+    Permite a los administradores reactivar una tarea que fue finalizada
+    previamente, devolviéndola al estado activo.
+    
+    **Autenticación requerida:** Token JWT válido de administrador.
+    
+    **Parámetros:**
+        nombre: Nombre exacto de la tarea finalizada a reactivar.
+        current_user: Usuario administrador autenticado.
+        gestor_sistema: Instancia del gestor.
+        
+    **Retorna:**
+        BaseResponse: Confirmación de reactivación exitosa.
+        
+    **Errores:**
+        HTTPException: 400 si la tarea no existe o no está finalizada.
+        HTTPException: 403 si el usuario no es administrador.
+        HTTPException: 500 para errores internos.
+    """
+    try:
+        tarea = buscar_tarea_por_nombre(gestor_sistema, nombre)
+        
+        if not tarea:
+            raise HTTPException(status_code=400, detail=f"Tarea '{nombre}' no encontrada")
+        
+        if not tarea.finalizada:
+            raise HTTPException(
+                status_code=400,
+                detail=f"La tarea '{nombre}' no está finalizada"
+            )
+        
+        # Reactivar la tarea
+        tarea.finalizada = False
+        gestor_sistema.guardar_tareas()
+        
+        return BaseResponse(
+            success=True,
+            message=f"Tarea '{nombre}' reactivada exitosamente"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/tareas/comentario/{tarea_nombre}/{comentario_index}", response_model=BaseResponse)
+async def editar_comentario(
+    tarea_nombre: str,
+    comentario_index: int,
+    nuevo_texto: dict,
+    current_user: TokenData = Depends(get_current_user),
+    gestor_sistema: GestorSistema = Depends(get_gestor)
+):
+    """Edita un comentario existente en una tarea.
+    
+    Permite a los usuarios editar sus propios comentarios en una tarea.
+    Solo el autor del comentario puede editarlo.
+    
+    **Autenticación requerida:** Token JWT válido.
+    
+    **Parámetros:**
+        tarea_nombre: Nombre de la tarea.
+        comentario_index: Índice del comentario a editar (0-based).
+        nuevo_texto: Dict con key 'texto' conteniendo el nuevo texto.
+        current_user: Usuario autenticado.
+        gestor_sistema: Instancia del gestor.
+        
+    **Retorna:**
+        BaseResponse: Confirmación de edición exitosa.
+        
+    **Errores:**
+        HTTPException: 400 si la tarea o comentario no existe.
+        HTTPException: 403 si el usuario no es el autor del comentario.
+        HTTPException: 500 para errores internos.
+    """
+    try:
+        tarea = buscar_tarea_por_nombre(gestor_sistema, tarea_nombre)
+        
+        if not tarea:
+            raise HTTPException(status_code=400, detail=f"Tarea '{tarea_nombre}' no encontrada")
+        
+        if comentario_index < 0 or comentario_index >= len(tarea.comentarios):
+            raise HTTPException(status_code=400, detail="Índice de comentario inválido")
+        
+        comentario = tarea.comentarios[comentario_index]
+        
+        # Verificar que el usuario sea el autor del comentario
+        if comentario.get('usuario') != current_user.nombre:
+            raise HTTPException(
+                status_code=403,
+                detail="Solo puedes editar tus propios comentarios"
+            )
+        
+        # Editar el comentario
+        texto_nuevo = nuevo_texto.get('texto', '').strip()
+        if not texto_nuevo:
+            raise HTTPException(status_code=400, detail="El comentario no puede estar vacío")
+        
+        tarea.comentarios[comentario_index]['texto'] = texto_nuevo
+        tarea.comentarios[comentario_index]['editado'] = True
+        tarea.comentarios[comentario_index]['fecha_edicion'] = datetime.now().isoformat()
+        
+        gestor_sistema.guardar_tareas()
+        
+        return BaseResponse(
+            success=True,
+            message=f"Comentario editado exitosamente"
+        )
     except HTTPException:
         raise
     except Exception as e:
