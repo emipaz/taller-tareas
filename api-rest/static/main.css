@@ -840,6 +840,212 @@ button:hover {
       por lo que sobrescribe los estilos globales de button
 */
 
+/* ==========================================
+   FRAGMENTO DE LISTA DE TAREAS
+   ==========================================
+   Estilos para el fragmento parcial de tareas que se muestra
+   en el dashboard y se puede recargar con HTMX
+*/
+
+.tareas-fragment ul {
+  /* Eliminar estilos de lista por defecto */
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tarea-item {
+  /* Fondo con gradiente diagonal - azul grisáceo oscuro a medio */
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  
+  /* Bordes redondeados suaves */
+  border-radius: 8px;
+  
+  /* Espaciado interno generoso */
+  padding: 20px;
+  
+  /* Separación entre tarjetas de tareas */
+  margin-bottom: 15px;
+  
+  /* Borde sutil para definir límites */
+  border: 1px solid #4a5f7f;
+  
+  /* Transiciones suaves para animaciones hover */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tarea-item:hover {
+  /* Elevación sutil al pasar el cursor */
+  transform: translateY(-2px);
+  
+  /* Sombra más pronunciada para efecto de profundidad */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tarea-header {
+  /* Flexbox para distribuir título y badge */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  /* Separación inferior */
+  margin-bottom: 10px;
+  
+  /* Permitir salto de línea en pantallas pequeñas */
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tarea-titulo {
+  /* Tamaño destacado para el título */
+  font-size: 1.2em;
+  color: #ffffff;
+}
+
+.tarea-link {
+  /* Color azul claro para enlaces */
+  color: #64b5f6;
+  
+  /* Sin subrayado por defecto */
+  text-decoration: none;
+  
+  /* Transición suave del color */
+  transition: color 0.2s ease;
+}
+
+.tarea-link:hover {
+  /* Color más intenso en hover */
+  color: #42a5f5;
+  
+  /* Subrayado en hover para indicar clickeable */
+  text-decoration: underline;
+}
+
+.tarea-badge {
+  /* Espaciado interno para badges */
+  padding: 4px 12px;
+  
+  /* Bordes redondeados tipo píldora */
+  border-radius: 15px;
+  
+  /* Tamaño de fuente pequeño */
+  font-size: 0.85em;
+  
+  /* Texto en negrita */
+  font-weight: bold;
+}
+
+.badge-activa {
+  /* Verde para tareas activas */
+  background: #4caf50;
+  color: white;
+}
+
+.badge-finalizada {
+  /* Gris para tareas finalizadas */
+  background: #757575;
+  color: white;
+}
+
+.desc {
+  /* Color gris claro para descripción */
+  color: #e0e0e0;
+  
+  /* Separación inferior */
+  margin-bottom: 12px;
+  
+  /* Altura de línea para mejor legibilidad */
+  line-height: 1.5;
+}
+
+.meta {
+  /* Flexbox para distribuir metadatos */
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  
+  /* Color gris para información secundaria */
+  color: #b0bec5;
+  
+  /* Tamaño ligeramente menor */
+  font-size: 0.9em;
+  
+  /* Separación inferior */
+  margin-bottom: 12px;
+}
+
+.meta span {
+  /* Flexbox inline para alinear iconos con texto */
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tarea-actions {
+  /* Flexbox para botones de acción */
+  display: flex;
+  gap: 10px;
+  
+  /* Separación superior */
+  margin-top: 12px;
+  padding-top: 12px;
+  
+  /* Línea separadora sutil */
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-ver-detalles {
+  /* Espaciado interno del botón */
+  padding: 8px 16px;
+  
+  /* Fondo azul */
+  background: #2196f3;
+  color: white;
+  
+  /* Sin subrayado de enlace */
+  text-decoration: none;
+  
+  /* Bordes redondeados */
+  border-radius: 4px;
+  
+  /* Tamaño de fuente */
+  font-size: 0.9em;
+  font-weight: bold;
+  
+  /* Transición suave del fondo */
+  transition: background 0.2s ease;
+  
+  /* Flexbox inline para alinear icono con texto */
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-ver-detalles:hover {
+  /* Azul más oscuro en hover */
+  background: #1976d2;
+}
+
+.no-tareas {
+  /* Centrado del mensaje */
+  text-align: center;
+  
+  /* Espaciado generoso */
+  padding: 40px;
+  
+  /* Color gris para mensaje vacío */
+  color: #b0bec5;
+  
+  /* Tamaño destacado */
+  font-size: 1.1em;
+  
+  /* Fondo sutil */
+  background: rgba(0, 0, 0, 0.2);
+  
+  /* Bordes redondeados */
+  border-radius: 8px;
+}
+
 
 
 

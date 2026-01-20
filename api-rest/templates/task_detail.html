@@ -425,8 +425,8 @@
       <div class="task-header">
         <h1 class="task-title">📋 {{ tarea.nombre }}</h1>
         
-        <span class="task-status {% if tarea.finalizada %}status-finalizada{% else %}status-activa{% endif %}">
-          {% if tarea.finalizada %}✓ Finalizada{% else %}🔄 Activa{% endif %}
+        <span class="task-status {% if tarea.esta_finalizada %}status-finalizada{% else %}status-activa{% endif %}">
+          {% if tarea.esta_finalizada %}✓ Finalizada{% else %}🔄 Activa{% endif %}
         </span>
 
         <p class="task-description">{{ tarea.descripcion }}</p>
@@ -449,7 +449,7 @@
           </div>
           {% endif %}
 
-          {% if tarea.finalizada and tarea.fecha_finalizacion %}
+          {% if tarea.esta_finalizada and tarea.fecha_finalizacion %}
           <div class="meta-item">
             <span class="meta-label">Fecha de finalización:</span>
             <span class="meta-value">{{ tarea.fecha_finalizacion }}</span>
@@ -469,7 +469,7 @@
             👥 Asignar Usuario
           </button>
 
-          {% if not tarea.finalizada %}
+          {% if not tarea.esta_finalizada %}
           <form method="post" action="/web/tareas/finalizar" style="display: inline;">
             <input type="hidden" name="nombre_tarea" value="{{ tarea.nombre }}">
             <button type="submit" class="action-button btn-finish" onclick="return confirm('¿Finalizar esta tarea?')">
@@ -570,15 +570,6 @@
               <div class="comment-content">
                 <p class="comment-text">{{ comentario.comentario }}</p>
               </div>
-
-              {# Botón de editar solo para comentarios propios #}
-              {% if comentario.usuario == user.nombre %}
-              <div class="comment-actions">
-                <button class="btn-edit" onclick="editarComentario({{ loop.index0 }}, '{{ comentario.comentario|replace("'", "\\'") }}')">
-                  ✏️ Editar
-                </button>
-              </div>
-              {% endif %}
             </div>
             {% endfor %}
           {% else %}
@@ -655,80 +646,6 @@
           alert('Error al agregar comentario: ' + error.message);
         }
       });
-
-      /**
-       * Editar un comentario existente
-       * 
-       * @param {number} index - Índice del comentario en la lista
-       * @param {string} textoActual - Texto actual del comentario
-       */
-      function editarComentario(index, textoActual) {
-        const commentDiv = document.getElementById(`comment-${index}`);
-        const contentDiv = commentDiv.querySelector('.comment-content');
-        const actionsDiv = commentDiv.querySelector('.comment-actions');
-        
-        // Crear textarea para edición
-        const textarea = document.createElement('textarea');
-        textarea.className = 'edit-textarea';
-        textarea.value = textoActual;
-        
-        // Crear botones de guardar/cancelar
-        const saveBtn = document.createElement('button');
-        saveBtn.className = 'btn-save';
-        saveBtn.textContent = '💾 Guardar';
-        saveBtn.onclick = () => guardarComentario(index, textarea.value);
-        
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'btn-cancel';
-        cancelBtn.textContent = '✖️ Cancelar';
-        cancelBtn.onclick = () => location.reload();
-        
-        // Reemplazar contenido
-        contentDiv.innerHTML = '';
-        contentDiv.appendChild(textarea);
-        
-        actionsDiv.innerHTML = '';
-        actionsDiv.appendChild(saveBtn);
-        actionsDiv.appendChild(cancelBtn);
-        
-        textarea.focus();
-      }
-
-      /**
-       * Guardar cambios en un comentario
-       * 
-       * @param {number} index - Índice del comentario
-       * @param {string} nuevoTexto - Nuevo texto del comentario
-       */
-      async function guardarComentario(index, nuevoTexto) {
-        if (!nuevoTexto.trim()) {
-          alert('El comentario no puede estar vacío');
-          return;
-        }
-
-        try {
-          const response = await fetch(`/web/tareas/comentario/{{ tarea.nombre }}/${index}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              texto: nuevoTexto
-            })
-          });
-
-          if (response.ok) {
-            location.reload();
-          } else {
-            const data = await response.json();
-            alert(data.detail || 'Error al guardar comentario');
-          }
-        } catch (error) {
-          console.error('Error:', error);
-          alert('Error al guardar comentario');
-        }
-      }
 
       /**
        * Mostrar modal de asignación de usuario
