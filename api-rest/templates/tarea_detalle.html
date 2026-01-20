@@ -440,7 +440,28 @@
           {% if tarea.usuarios_asignados %}
           <div class="meta-item">
             <span class="meta-label">Usuarios asignados:</span>
-            <span class="meta-value">{{ tarea.usuarios_asignados|join(', ') }}</span>
+            <div class="meta-value">
+              {% if user.rol == "admin" %}
+                {# Admin puede ver y quitar usuarios #}
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                  {% for usuario in tarea.usuarios_asignados %}
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span>{{ usuario }}</span>
+                    <button 
+                      class="btn-remove-user" 
+                      onclick="desasignarUsuario('{{ usuario }}')"
+                      title="Quitar usuario de la tarea"
+                      style="background: #f44336; color: white; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">
+                      ✕
+                    </button>
+                  </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                {# Usuarios normales solo ven la lista #}
+                <span>{{ tarea.usuarios_asignados|join(', ') }}</span>
+              {% endif %}
+            </div>
           </div>
           {% else %}
           <div class="meta-item">
@@ -695,6 +716,37 @@
           alert('Error al asignar usuario');
         }
       });
+
+      /**
+       * Desasignar usuario de la tarea
+       */
+      async function desasignarUsuario(nombreUsuario) {
+        if (!confirm(`¿Quitar a "${nombreUsuario}" de esta tarea?`)) return;
+
+        try {
+          const response = await fetch('/web/tareas/desasignar', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              nombre_tarea: '{{ tarea.nombre }}',
+              nombre_usuario: nombreUsuario
+            })
+          });
+
+          if (response.ok) {
+            location.reload();
+          } else {
+            const data = await response.json();
+            alert(data.detail || 'Error al desasignar usuario');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Error al desasignar usuario');
+        }
+      }
 
       /**
        * Reactivar tarea finalizada

@@ -1684,6 +1684,86 @@ async def asignar_usuario_tarea(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/tareas/desasignar", response_model=BaseResponse)
+async def desasignar_usuario_tarea(
+    asignacion_data: AsignarUsuarioRequest,
+    current_user: TokenData = Depends(get_current_admin),
+    gestor_sistema: GestorSistema = Depends(get_gestor)
+):
+    """Desasigna (quita) un usuario de una tarea existente (solo administradores).
+    
+    Remueve un usuario de la lista de asignados de una tarea. Solo los
+    administradores pueden desasignar usuarios de las tareas.
+    
+    **Autenticación requerida:** Token JWT válido de administrador.
+    
+    **Parámetros:**
+        asignacion_data : Datos de la desasignación (nombre de tarea y usuario).
+        current_user    : Usuario administrador autenticado.
+        gestor_sistema  : Instancia del gestor inyectada por FastAPI.
+        
+    **Retorna:**
+        BaseResponse: Confirmación de desasignación exitosa.
+        
+    **Errores:**
+        HTTPException: 400 si la tarea no existe.
+        HTTPException: 400 si el usuario no está asignado a la tarea.
+        HTTPException: 403 si el usuario no es administrador.
+        HTTPException: 500 para errores internos del servidor.
+        
+    **Ejemplo de uso:**
+        ```bash
+        curl -X POST http://localhost:8000/tareas/desasignar \\
+             -H "Authorization: Bearer tu_token_admin" \\
+             -H "Content-Type: application/json" \\
+             -d '{
+                   "nombre_tarea": "implementar-api-rest",
+                   "nombre_usuario": "desarrollador1"
+                 }'
+        ```
+        
+    **Respuesta:**
+        ```json
+        {
+            "success": true,
+            "message": "Usuario 'desarrollador1' desasignado de tarea 'implementar-api-rest'"
+        }
+        ```
+    """
+    try:
+        # Buscar tarea
+        tareas = gestor_sistema.cargar_tareas()
+        from core.utils import buscar_tarea_por_nombre
+        tarea = buscar_tarea_por_nombre(tareas, asignacion_data.nombre_tarea)
+        
+        if not tarea:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Tarea '{asignacion_data.nombre_tarea}' no encontrada"
+            )
+        
+        # Quitar usuario
+        exito = tarea.quitar_usuario(asignacion_data.nombre_usuario)
+        
+        if not exito:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Usuario '{asignacion_data.nombre_usuario}' no está asignado a la tarea"
+            )
+        
+        # Guardar cambios
+        gestor_sistema.guardar_tareas(tareas)
+        
+        return BaseResponse(
+            success=True,
+            message=f"Usuario '{asignacion_data.nombre_usuario}' desasignado de tarea '{asignacion_data.nombre_tarea}'"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/tareas/finalizar", response_model=BaseResponse)
 async def finalizar_tarea(
     finalizar_data: FinalizarTareaRequest,

@@ -22,7 +22,7 @@ El módulo usa el patrón proxy:
 - httpx (TestClient) : Cliente HTTP para llamadas internas
 - Cookies HttpOnly   : Almacenamiento seguro de tokens JWT
 
-## Estructura de Endpoints (19 total)
+## Estructura de Endpoints (20 total)
 
 ### Landing y Autenticación (4)
 - GET  /                    # Landing page con formulario login
@@ -44,9 +44,10 @@ El módulo usa el patrón proxy:
 - POST /admin/delete-user     # Eliminar usuario
 - POST /admin/create-task    # Crear tarea desde admin
 
-### Acciones sobre Tareas (5) - Prefijo /web/
+### Acciones sobre Tareas (6) - Prefijo /web/
 - POST   /web/tareas/comentario         # Agregar comentario (HTMX)
 - POST   /web/tareas/asignar            # Asignar usuario a tarea (HTMX)
+- POST   /web/tareas/desasignar         # Quitar usuario de tarea (admin, HTMX)
 - POST   /web/tareas/finalizar          # Finalizar tarea (admin)
 - PUT    /web/tareas/{nombre}/reactivar # Reactivar tarea (admin, HTMX)
 - DELETE /web/tareas/{nombre}           # Eliminar tarea finalizada (admin, HTMX)
@@ -1115,6 +1116,51 @@ async def asignar_usuario_web(request: Request):
     
     # Llamar a la API interna
     resp = client.post("/tareas/asignar", headers=headers, json=data)
+    
+    if resp.status_code == 200:
+        return JSONResponse(resp.json())
+    else:
+        return JSONResponse(resp.json(), status_code=resp.status_code)
+
+
+@router.post("/web/tareas/desasignar")
+@token_required
+async def desasignar_usuario_web(request: Request):
+    """Desasignar (quitar) usuario de una tarea desde la interfaz web (solo administradores).
+    
+    Endpoint proxy que recibe datos JSON desde HTMX, valida que el usuario sea admin,
+    extrae el token de cookies, y llama a la API interna POST /tareas/desasignar.
+    
+    **Autenticación:** Cookies HttpOnly (access_token) + rol admin
+    
+    **Request Body (JSON):**
+        - nombre_tarea (str): Nombre de la tarea
+        - nombre_usuario (str): Nombre del usuario a desasignar
+    
+    **Returns:**
+        JSONResponse: Resultado de la API con status code correspondiente
+        
+    **Errors:**
+        - 401: No autenticado
+        - 403: No es administrador
+        - 400: Tarea no encontrada o usuario no asignado
+        - 500: Error interno
+    """
+    res = _get_api_client_headers_user(request)
+    if not res:
+        return JSONResponse({"detail": "No autorizado"}, status_code=401)
+    
+    client, headers, user = res
+    
+    # Verificar que sea admin
+    if user.get("rol") != "admin":
+        return JSONResponse({"detail": "Acceso denegado"}, status_code=403)
+    
+    # Obtener datos del JSON
+    data = await request.json()
+    
+    # Llamar a la API interna
+    resp = client.post("/tareas/desasignar", headers=headers, json=data)
     
     if resp.status_code == 200:
         return JSONResponse(resp.json())
