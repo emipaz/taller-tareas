@@ -1872,36 +1872,44 @@ async def eliminar_tarea(
         Solo se pueden eliminar tareas que ya estén finalizadas.
     """
     try:
+        logger.info(f"Intentando eliminar tarea finalizada: {nombre}")
         # Buscar la tarea
         tareas = gestor_sistema.cargar_tareas()
         tarea = buscar_tarea_por_nombre(tareas, nombre)
         
         if not tarea:
+            logger.warning(f"Tarea no encontrada: {nombre}")
             raise HTTPException(status_code=400, detail=f"Tarea '{nombre}' no encontrada")
         
         # Verificar que esté finalizada
+        logger.debug(f"Verificando si tarea está finalizada: esta_finalizada={tarea.esta_finalizada()}")
         if not tarea.esta_finalizada():
+            logger.warning(f"Tarea '{nombre}' no está finalizada, no se puede eliminar")
             raise HTTPException(
                 status_code=400,
                 detail=f"La tarea '{nombre}' debe estar finalizada para poder eliminarse"
             )
         
         # Eliminar la tarea
-        exito = gestor_sistema.eliminar_tarea_finalizada(nombre)
+        logger.info(f"Eliminando tarea: {nombre}")
+        exito, mensaje = gestor_sistema.eliminar_tarea(nombre)
         
         if not exito:
+            logger.error(f"No se pudo eliminar la tarea '{nombre}': {mensaje}")
             raise HTTPException(
                 status_code=400,
-                detail=f"No se pudo eliminar la tarea '{nombre}'"
+                detail=mensaje
             )
         
+        logger.info(f"Tarea '{nombre}' eliminada exitosamente")
         return BaseResponse(
             success=True,
-            message=f"Tarea '{nombre}' eliminada permanentemente"
+            message=mensaje
         )
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error al eliminar tarea '{nombre}': {type(e).__name__}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
