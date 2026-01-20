@@ -1,15 +1,112 @@
 """Módulo web para la capa HTML de la API REST.
 
-Proporciona rutas que renderizan plantillas Jinja2 (dashboard, fragmentos
-de tareas, login, set-password y logout) y utilidades relacionadas.
+Este módulo implementa la interfaz web completa del sistema de gestión de tareas
+usando Jinja2 para renderizado server-side y HTMX para interactividad dinámica.
+Actúa como capa proxy entre el navegador y la API REST interna.
 
-Incluye el decorador `token_required` que valida el `access_token`
-almacenado en cookies y, en caso de expiración, intenta renovar usando el
-`refresh_token` vía el endpoint interno `/auth/refresh`.
+## Arquitectura
 
-Las vistas de este módulo usan `TestClient` contra la misma aplicación
-para consumir los endpoints de la API interna y obtener información de
-usuario y tareas.
+El módulo usa el patrón proxy:
+1. Navegador envía request con cookies HttpOnly (access_token, refresh_token)
+2. web.py extrae tokens de cookies
+3. web.py llama a api_rest.py vía TestClient con Authorization headers
+4. api_rest.py valida JWT y procesa request
+5. web.py recibe respuesta JSON
+6. web.py renderiza Jinja2 → retorna HTML al navegador
+
+## Tecnologías
+
+- FastAPI            : Framework ASGI para routing y manejo de requests
+- Jinja2             : or de plantillas server-side con herencia y filtros
+- HTMX 1.9.2         : Interactividad HTML sin JavaScript complejo
+- httpx (TestClient) : Cliente HTTP para llamadas internas
+- Cookies HttpOnly   : Almacenamiento seguro de tokens JWT
+
+## Estructura de Endpoints (19 total)
+
+### Landing y Autenticación (4)
+- GET  /                    # Landing page con formulario login
+- POST /login               # Procesa login, establece cookies HttpOnly
+- POST /set-password        # Primera contraseña para usuarios nuevos
+- GET  /logout              # Cierra sesión, invalida tokens
+
+### Dashboard y Vistas (4)
+- GET /dashboard               # Dashboard principal con tareas del usuario
+- GET /tareas/lista            # Lista filtrable de tareas (HTMX)
+- GET /tareas/detalle/{nombre} # Vista detallada de tarea con comentarios
+- POST /change-password        # Cambiar contraseña desde dashboard
+
+### Panel de Administración (6)
+- GET  /admin/users           # Panel gestión de usuarios
+- GET  /admin/stats           # Estadísticas del sistema
+- POST /admin/create-user     # Crear nuevo usuario
+- POST /admin/reset-password  # Resetear contraseña de usuario
+- POST /admin/delete-user     # Eliminar usuario
+- POST /admin/create-task    # Crear tarea desde admin
+
+### Acciones sobre Tareas (5) - Prefijo /web/
+- POST   /web/tareas/comentario         # Agregar comentario (HTMX)
+- POST   /web/tareas/asignar            # Asignar usuario a tarea (HTMX)
+- POST   /web/tareas/finalizar          # Finalizar tarea (admin)
+- PUT    /web/tareas/{nombre}/reactivar # Reactivar tarea (admin, HTMX)
+- DELETE /web/tareas/{nombre}           # Eliminar tarea finalizada (admin, HTMX)
+
+## Funciones Clave
+
+### Decorador `@token_required`
+Valida access_token de cookies, renueva automáticamente si expiró usando
+refresh_token, y expone `request.state.user` y `request.state.access_token_current`.
+Redirige a / si no puede autenticar.
+
+### Helper `_get_api_client_headers_user(request)`
+Extrae token de request.state, crea TestClient, y retorna tupla
+(client, headers, user_dict) para hacer llamadas a la API interna.
+
+## Plantillas Jinja2
+
+Ubicadas en `templates/`:
+- index.html              # Landing con login
+- dashboard.html          # Dashboard principal
+- admin_users.html        # Panel administración usuarios
+- set_password.html       # Establecer contraseña
+- _tareas_fragment.html   # Fragmento HTMX de lista de tareas
+- admin_stats.html        # Estadísticas del sistema
+- tarea_detalle.html      # Vista detallada de tarea
+
+## Cookies Utilizadas
+
+- access_token  : JWT de corta duración (30 min), HttpOnly, SameSite=Lax
+- refresh_token : JWT de larga duración (7 días), HttpOnly, SameSite=Lax
+
+JavaScript no puede leer estas cookies (protección XSS). El navegador las envía
+automáticamente en cada request.
+
+## Logging
+
+Usa logger "web" para registrar:
+- Intentos de autenticación
+- Renovación de tokens
+- Errores de validación
+- Llamadas a API interna
+
+Nivel: INFO para operaciones normales, DEBUG para detalles, WARNING/ERROR para problemas.
+
+## Dependencias
+
+- fastapi: Framework web
+- jinja2: Motor de plantillas
+- httpx: Cliente HTTP (vía TestClient)
+- jwt_auth: Verificación de tokens JWT
+
+## Uso
+
+Este módulo se registra como router en api_rest.py:
+```python
+from api-rest.web import router as web_router
+app.include_router(web_router)
+```
+
+No se ejecuta standalone, sino como parte de la aplicación FastAPI principal.
 """
 
 from fastapi import APIRouter, Request, Form 
@@ -840,12 +937,35 @@ async def tarea_detalle(
     tarea = resp_tarea.json()
     
     # Obtener todos los usuarios para el filtro y asignación (solo admin)
+    # Hace paginación automática para obtener todos los usuarios
     usuarios = []
     if user.get("rol") == "admin":
-        resp_usuarios = client.get("/usuarios", params={"limit": 1000}, headers=headers)
-        if resp_usuarios.status_code == 200:
-            usuarios_data = resp_usuarios.json()
-            usuarios = usuarios_data.get("usuarios", [])
+        logger.debug(f"Usuario admin, obteniendo lista completa de usuarios con paginación")
+        page = 1
+        while True:
+            resp_usuarios = client.get("/usuarios", params={"limit": 100, "page": page}, headers=headers)
+            logger.debug(f"Respuesta /usuarios página {page}: status={resp_usuarios.status_code}")
+            
+            if resp_usuarios.status_code == 200:
+                usuarios_data = resp_usuarios.json()
+                usuarios_pagina = usuarios_data.get("usuarios", [])
+                usuarios.extend(usuarios_pagina)
+                
+                # Verificar si hay más páginas
+                pagination = usuarios_data.get("pagination", {})
+                total_pages = pagination.get("total_pages", 1)
+                logger.debug(f"Página {page}/{total_pages}, obtenidos {len(usuarios_pagina)} usuarios")
+                
+                if page >= total_pages:
+                    break
+                page += 1
+            else:
+                logger.warning(f"Error al obtener usuarios página {page}: {resp_usuarios.status_code} - {resp_usuarios.text}")
+                break
+        
+        logger.info(f"Se obtuvieron {len(usuarios)} usuarios en total para el select")
+    else:
+        logger.debug(f"Usuario no es admin, no se cargan usuarios para select")
     
     # Filtrar comentarios si se proporcionan filtros
     comentarios = tarea.get("comentarios", [])
@@ -887,7 +1007,7 @@ async def tarea_detalle(
     )
     
     return templates.TemplateResponse(
-        "task_detail.html",
+        "tarea_detalle.html",
         {
             "request": request,
             "user": user,
@@ -908,7 +1028,25 @@ async def tarea_detalle(
 @router.post("/web/tareas/comentario")
 @token_required
 async def agregar_comentario_web(request: Request):
-    """Agregar comentario a una tarea desde la interfaz web."""
+    """Agregar comentario a una tarea desde la interfaz web.
+    
+    Endpoint proxy que recibe datos JSON desde HTMX, extrae el token de cookies,
+    y llama a la API interna POST /tareas/comentario.
+    
+    **Autenticación:** Cookies HttpOnly (access_token)
+    
+    **Request Body (JSON):**
+        - nombre_tarea (str): Nombre de la tarea
+        - comentario (str): Texto del comentario
+    
+    **Returns:**
+        JSONResponse: Resultado de la API con status code correspondiente
+        
+    **Errors:**
+        - 401: No autenticado
+        - 400: Datos inválidos o tarea no encontrada
+        - 500: Error interno
+    """
     res = _get_api_client_headers_user(request)
     if not res:
         logger.warning("agregar_comentario_web: No se pudo autenticar usuario")
@@ -943,7 +1081,25 @@ async def agregar_comentario_web(request: Request):
 @router.post("/web/tareas/asignar")
 @token_required
 async def asignar_usuario_web(request: Request):
-    """Asignar usuario a una tarea desde la interfaz web."""
+    """Asignar usuario a una tarea desde la interfaz web.
+    
+    Endpoint proxy que recibe datos JSON desde HTMX, extrae el token de cookies,
+    y llama a la API interna POST /tareas/asignar.
+    
+    **Autenticación:** Cookies HttpOnly (access_token)
+    
+    **Request Body (JSON):**
+        - nombre_tarea (str): Nombre de la tarea
+        - nombre_usuario (str): Nombre del usuario a asignar
+    
+    **Returns:**
+        JSONResponse: Resultado de la API con status code correspondiente
+        
+    **Errors:**
+        - 401: No autenticado
+        - 400: Tarea o usuario no encontrado
+        - 500: Error interno
+    """
     res = _get_api_client_headers_user(request)
     if not res:
         return JSONResponse({"detail": "No autorizado"}, status_code=401)
@@ -969,7 +1125,23 @@ async def asignar_usuario_web(request: Request):
 @router.post("/web/tareas/finalizar")
 @token_required
 async def finalizar_tarea_web(request: Request):
-    """Finalizar una tarea desde la interfaz web."""
+    """Finalizar una tarea desde la interfaz web (solo administradores).
+    
+    Endpoint que recibe datos de formulario, valida que el usuario sea admin,
+    extrae el token de cookies, y llama a la API interna POST /tareas/finalizar.
+    Redirige de vuelta a la página de detalle de la tarea.
+    
+    **Autenticación:** Cookies HttpOnly (access_token) + rol admin
+    
+    **Form Data:**
+        - nombre_tarea (str): Nombre de la tarea a finalizar
+    
+    **Returns:**
+        RedirectResponse: Redirección a /tareas/detalle/{nombre_tarea}
+        
+    **Errors:**
+        - 303: Redirect a / si no autenticado o no es admin
+    """
     res = _get_api_client_headers_user(request)
     if not res:
         return RedirectResponse(url='/', status_code=303)
@@ -998,7 +1170,26 @@ async def finalizar_tarea_web(request: Request):
 @router.put("/web/tareas/{nombre_tarea}/reactivar")
 @token_required
 async def reactivar_tarea_web(request: Request, nombre_tarea: str):
-    """Reactivar una tarea finalizada desde la interfaz web."""
+    """Reactivar una tarea finalizada (solo administradores).
+    
+    Endpoint proxy que valida que el usuario sea admin, extrae el token de cookies,
+    y llama a la API interna PUT /tareas/{nombre}/reactivar para cambiar el estado
+    de la tarea de finalizada a pendiente.
+    
+    **Autenticación:** Cookies HttpOnly (access_token) + rol admin
+    
+    **Path Parameters:**
+        - nombre_tarea (str): Nombre de la tarea a reactivar
+    
+    **Returns:**
+        JSONResponse: {success: true, message: "Tarea reactivada exitosamente"}
+        
+    **Errors:**
+        - 401: No autenticado
+        - 403: No es administrador
+        - 400: Tarea no encontrada o no está finalizada
+        - 500: Error interno
+    """
     res = _get_api_client_headers_user(request)
     if not res:
         return JSONResponse({"detail": "No autorizado"}, status_code=401)
@@ -1021,7 +1212,30 @@ async def reactivar_tarea_web(request: Request, nombre_tarea: str):
 @router.delete("/web/tareas/{nombre_tarea}")
 @token_required
 async def eliminar_tarea_web(request: Request, nombre_tarea: str):
-    """Eliminar una tarea finalizada desde la interfaz web."""
+    """Eliminar permanentemente una tarea finalizada (solo administradores).
+    
+    Endpoint proxy que valida que el usuario sea admin, extrae el token de cookies,
+    y llama a la API interna DELETE /tareas/{nombre} para eliminar permanentemente
+    una tarea que esté en estado finalizada. Esta acción es IRREVERSIBLE.
+    
+    **Autenticación:** Cookies HttpOnly (access_token) + rol admin
+    
+    **Path Parameters:**
+        - nombre_tarea (str): Nombre de la tarea a eliminar
+    
+    **Returns:**
+        JSONResponse: {success: true, message: "Tarea eliminada permanentemente"}
+        
+    **Errors:**
+        - 401: No autenticado
+        - 403: No es administrador
+        - 400: Tarea no encontrada o no está finalizada
+        - 500: Error interno
+        
+    **⚠️ Advertencia:**
+        Esta operación elimina la tarea de forma permanente.
+        Solo se pueden eliminar tareas finalizadas.
+    """
     res = _get_api_client_headers_user(request)
     if not res:
         return JSONResponse({"detail": "No autorizado"}, status_code=401)
